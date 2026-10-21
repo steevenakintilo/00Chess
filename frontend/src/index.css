@@ -1,0 +1,109 @@
+body {
+  margin: 0;
+  background: #fff;
+  color: #000;
+}
+
+/* Boutons de jeu */
+.btn-round,
+.btn-buy,
+.btn-game {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.9rem 0.35rem 0.4rem;
+  border: 2px solid #1a1a1a;
+  border-radius: 999px;
+  background: #fff;
+  color: #1a1a1a;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 3px 3px 0 #1a1a1a;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.btn-round:hover:not(:disabled),
+.btn-buy:hover:not(:disabled),
+.btn-game:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 #1a1a1a;
+}
+.btn-round:active:not(:disabled),
+.btn-buy:active:not(:disabled),
+.btn-game:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 #1a1a1a;
+}
+.btn-round:disabled,
+.btn-buy:disabled,
+.btn-game:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.btn-round__icon,
+.btn-buy__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid #1a1a1a;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.btn-round__icon { background: #ffd43b; }
+.btn-buy__icon { background: #8ce99a; }
+.btn-round__icon svg,
+.btn-buy__icon svg { width: 1.1rem; height: 1.1rem; }
+.btn-round__tag { font-weight: 500; color: #555; }
+.btn-buy__price {
+  padding: 0.15rem 0.45rem;
+  border: 2px solid #1a1a1a;
+  border-radius: 999px;
+  background: #8ce99a;
+  font-size: 0.85em;
+}
+.btn-buy--active { background: #d3f9d8; }
+
+/* Compteurs vie / dollars */
+.hud {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid #1a1a1a;
+  border-radius: 1rem;
+  background: #fff;
+  color: #1a1a1a;
+  box-shadow: 3px 3px 0 #1a1a1a;
+}
+.hud__row { display: flex; align-items: flex-end; gap: 1.25rem; }
+.hud__row--foe { font-size: 0.8em; color: #555; }
+.hud__name { font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; align-self: center; min-width: 2.2rem; }
+.hud__stat { display: flex; flex-direction: column; line-height: 1; }
+.hud__label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #666; }
+.hud__value { font-size: 2rem; font-weight: 800; }
+.hud__row--foe .hud__value { font-size: 1.4rem; }
+.hud__foot { display: flex; flex-direction: column; gap: 0.15rem; font-size: 1rem; font-weight: 600; color: #333; border-top: 2px solid #1a1a1a; padding-top: 0.5rem; }
+@media (max-width: 991px) {
+  .hud { position: static; align-self: stretch; box-shadow: 2px 2px 0 #1a1a1a; }
+}
+
+/* Bouton de jeu simple (coups du 007, abandon) : même style, sans icône */
+.btn-game { padding: 0.55rem 1.1rem; }
+.btn-game--danger { background: #ffa8a8; }
+.btn-game--success { background: #8ce99a; }
+.btn-game--active { background: #1a1a1a; color: #fff; }
+
+/* Sélecteur de langue */
+.lang-switch { position: fixed; bottom: 0.75rem; right: 0.75rem; z-index: 30; display: flex; gap: 0.4rem; }
+.lang-switch .btn-game { padding: 0.3rem 0.7rem; font-size: 0.85rem; }
+
+/* Version compacte (boutons Menu / Règles / Fermer) */
+.btn-game--sm { padding: 0.3rem 0.85rem; font-size: 0.9rem; box-shadow: 2px 2px 0 #1a1a1a; }
+.btn-game--sm:hover:not(:disabled) { box-shadow: 3px 3px 0 #1a1a1a; }

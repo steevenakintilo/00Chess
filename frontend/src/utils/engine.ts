@@ -6,8 +6,8 @@ import type { Msg } from './msg'
 export type PlayerId = 'p1' | 'p2'
 export type PieceType = 'King' | 'Soldier' | 'Sergeant' | 'Archbishop' | 'Dabbaba'
 // Soldier = soldat, Sergeant = général, Archbishop = chef, Dabbaba = récolteur,
-// Berolina = reine (instantanée), Duck = tsar bomba (instantanée)
-export type ShopKey = 'Soldier' | 'Sergeant' | 'Archbishop' | 'Berolina' | 'Dabbaba' | 'Duck'
+// Berolina = reine (instantanée), Duck = tsar bomba (instantanée), Wildebeest = Genkidama (instantanée)
+export type ShopKey = 'Soldier' | 'Sergeant' | 'Archbishop' | 'Berolina' | 'Dabbaba' | 'Duck' | 'Wildebeest'
 
 export type Pos = { r: number; c: number }
 export type Piece = { type: PieceType; owner: PlayerId }
@@ -27,8 +27,10 @@ export type GameState = {
   players: Record<PlayerId, PlayerState>
   round: number
   maxRounds: number
+  infinite?: boolean // mode « Classique » : achats gratuits (argent infini), ni 007 ni revenus
   result: Result | null
   log: Msg[]
+  logCount?: number // total des entrées de journal écrites depuis le début (pour les sons : une action = un son)
 }
 
 export type Action =
@@ -43,10 +45,13 @@ export type Action =
 
 export const SIZE = 8
 export const MAX_ROUNDS = 50 // "50 coups (à déterminer)"
+export const UNLIMITED_ROUNDS = 9999 // « pas de limite » : la partie ne s'arrête que quand quelqu'un gagne (affiché ∞)
 export const KING_HP = 5
 export const HP_VALUE = 30 // valeur d'un PV restant au décompte final
 export const COLLECTOR_INCOME = [0, 25, 50, 100] // récolteurs en vie -> argent par round
 export const TSAR_SELF_DAMAGE = 2 // PV perdus par ton roi quand tu lances la Tsar Bomba
+export const GENKIDAMA_DAMAGE = 3 // PV retirés au roi adverse par la Genkidama (1000 $, 1 fois max)
+export const GENKIDAMA_GAP = 1000 // il faut plus de 1000 $ d'avance sur l'adversaire pour la lancer
 const KAMIKAZE_DAMAGE: Partial<Record<PieceType, number>> = { Soldier: 1, Sergeant: 1, Archbishop: 2 }
 // Snipes par joueur (tous généraux confondus / tous chefs confondus), débloqués à partir du round 15.
 // Général : soldat ou récolteur. Chef : soldat, général ou récolteur.
@@ -106,17 +111,18 @@ export function piecesOf(s: GameState, p: PlayerId): { pos: Pos; piece: Piece }[
 
 const log = (s: GameState, k: string, p?: Msg['p']) => {
   s.log.push({ k, p })
+  s.logCount = (s.logCount ?? 0) + 1 // nombre total d'entrées écrites (le journal, lui, est limité à 40) : sert à repérer les nouvelles
   if (s.log.length > 40) s.log.shift()
 }
 
-export function newGameState(maxRounds = MAX_ROUNDS): GameState {
+export function newGameState(maxRounds = MAX_ROUNDS, infinite = false): GameState {
   const board: (Piece | null)[][] = Array.from({ length: SIZE }, () => Array(SIZE).fill(null))
   board[SIZE - 1][0] = { type: 'King', owner: 'p1' }
   board[0][SIZE - 1] = { type: 'King', owner: 'p2' }
   const player = (): PlayerState => ({
     money: 0,
     hp: KING_HP,
-    bought: { Soldier: 0, Sergeant: 0, Archbishop: 0, Berolina: 0, Dabbaba: 0, Duck: 0 },
+    bought: { Soldier: 0, Sergeant: 0, Archbishop: 0, Berolina: 0, Dabbaba: 0, Duck: 0, Wildebeest: 0 },
     captured: 0,
     capturedPieces: [],
     duelWins: 0,
@@ -128,6 +134,7 @@ export function newGameState(maxRounds = MAX_ROUNDS): GameState {
     players: { p1: player(), p2: player() },
     round: 1,
     maxRounds,
+    infinite,
     result: null,
     log: [],
   }
@@ -174,8 +181,11 @@ function checkKings(s: GameState) {
   else if (d2) s.result = { winner: 'p1', reason: { k: 'end.foeKing' } }
 }
 
-const exhausted = (s: GameState, p: PlayerId) => SHOP_KEYS.every(k => s.players[p].bought[k] >= maxOf(k))
-const hasPieces = (s: GameState, p: PlayerId) => piecesOf(s, p).some(x => x.piece.type !== 'King')
+// K.O. : un joueur sans pièce d'attaque (soldat, général, chef) en jeu, et qui ne peut plus en poser (limites d'achat atteintes),
+// ne peut plus jamais menacer le roi adverse. La reine et le récolteur n'y changent rien.
+const ATTACKERS: ShopKey[] = ['Soldier', 'Sergeant', 'Archbishop']
+const outOfAttackers = (s: GameState, p: PlayerId) =>
+  ATTACKERS.every(k => s.players[p].bought[k] >= maxOf(k)) && !piecesOf(s, p).some(x => ATTACKERS.includes(x.piece.type as ShopKey))
 
 export const incomeOf = (s: GameState, p: PlayerId) =>
   COLLECTOR_INCOME[Math.min(piecesOf(s, p).filter(x => x.piece.type === 'Dabbaba').length, 3)]
@@ -185,14 +195,14 @@ export function finishRound(state: GameState): GameState {
   const s = structuredClone(state)
   if (s.result) return s
   for (const p of ['p1', 'p2'] as PlayerId[]) {
-    const gain = incomeOf(s, p)
+    const gain = s.infinite ? 0 : incomeOf(s, p)
     if (gain > 0) {
       s.players[p].money += gain
       log(s, 'log.income', { who: whoKey(p), n: gain })
     }
   }
-  const out1 = exhausted(s, 'p1') && !hasPieces(s, 'p1')
-  const out2 = exhausted(s, 'p2') && !hasPieces(s, 'p2')
+  const out1 = outOfAttackers(s, 'p1')
+  const out2 = outOfAttackers(s, 'p2')
   if (out1 && out2) s.result = tiebreak(s, 'nopieces')
   else if (out1) s.result = { winner: 'p2', reason: { k: 'end.myPieces' } }
   else if (out2) s.result = { winner: 'p1', reason: { k: 'end.foePieces' } }
@@ -226,19 +236,19 @@ export function applyDuelResult(
 // ------------------------------------------------------------------ placement
 
 // Une case est posable si elle est libre, ou si elle porte une pièce adverse sur ma dernière ligne
-// (poser un soldat, un général ou un chef dessus la mange ; le récolteur, lui, ne mange pas).
+// (poser un soldat, un général ou un chef ou un récolteur dessus la mange).
 export function placementCells(s: GameState, p: PlayerId, item: ShopKey): Pos[] {
   const out: Pos[] = []
   const ok = (r: number, c: number) => {
     if (!inBounds(r, c)) return false
     const x = s.board[r][c]
     if (!x) return true
-    return item !== 'Dabbaba' && r === homeRow(p) && x.owner !== p && x.type !== 'King'
+    return r === homeRow(p) && x.owner !== p && x.type !== 'King'
   }
   if (item === 'Soldier' || item === 'Sergeant' || item === 'Archbishop') { // n'importe où sur sa dernière rangée
     for (let c = 0; c < SIZE; c++) if (ok(homeRow(p), c)) out.push({ r: homeRow(p), c })
   } else if (item === 'Dabbaba') {
-    for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (!s.board[r][c]) out.push({ r, c })
+    for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (ok(r, c)) out.push({ r, c })
   }
   return out
 }
@@ -247,9 +257,12 @@ export function placementCells(s: GameState, p: PlayerId, item: ShopKey): Pos[] 
 export function buyBlockReason(s: GameState, p: PlayerId, item: ShopKey): string | null {
   const me = s.players[p]
   if (me.bought[item] >= maxOf(item)) return 'reason.max'
-  if (me.money < priceOf(item)) return 'reason.money'
+  if (s.infinite && (item === 'Berolina' || item === 'Duck' || item === 'Wildebeest')) return 'reason.max' // mode Classique : ni reine, ni Tsar Bomba, ni Genkidama
+  if (!s.infinite && me.money < priceOf(item)) return 'reason.money'
   if (item === 'Berolina') return me.hp < KING_HP ? null : 'reason.hp'
-  if (item === 'Duck') return null
+  // Genkidama : il faut aussi plus de 1000 $ d'avance sur l'adversaire (sinon 1001 $ contre 995 $ suffirait, ce qui n'est pas juste)
+  if (item === 'Wildebeest') return me.money - s.players[other(p)].money > GENKIDAMA_GAP ? null : 'reason.genkiGap'
+  if (item === 'Duck') return me.hp > TSAR_SELF_DAMAGE ? null : 'reason.tsarHp' // la bombe ne doit pas tuer ton propre roi
   return placementCells(s, p, item).length === 0 ? 'reason.cell' : null
 }
 
@@ -376,7 +389,7 @@ export function legalActions(s: GameState, p: PlayerId): Action[] {
   const out: Action[] = [{ kind: 'pass' }]
   for (const item of SHOP_KEYS) {
     if (!canBuy(s, p, item)) continue
-    if (item === 'Berolina' || item === 'Duck') out.push({ kind: 'buy', item })
+    if (item === 'Berolina' || item === 'Duck' || item === 'Wildebeest') out.push({ kind: 'buy', item })
     else for (const to of placementCells(s, p, item)) out.push({ kind: 'buy', item, to })
   }
   for (const { pos } of piecesOf(s, p)) {
@@ -410,7 +423,7 @@ export function applyAction(state: GameState, p: PlayerId, a: Action): GameState
       log(s, 'log.pass', { who })
       break
     case 'buy': {
-      me.money -= priceOf(a.item)
+      if (!s.infinite) me.money -= priceOf(a.item)
       me.bought[a.item] += 1
       if (a.item === 'Berolina') {
         // la reine donne son coeur au roi : +1 PV
@@ -422,6 +435,10 @@ export function applyAction(state: GameState, p: PlayerId, a: Action): GameState
         for (const x of gone) removeAt(s, x.pos)
         me.hp -= TSAR_SELF_DAMAGE
         log(s, 'log.tsar', { who, n: gone.length, dmg: TSAR_SELF_DAMAGE })
+      } else if (a.item === 'Wildebeest') {
+        // Genkidama : toute l'énergie (1000 $) dans une seule attaque, le roi adverse perd des PV
+        foe.hp -= GENKIDAMA_DAMAGE
+        log(s, 'log.genki', { who, dmg: GENKIDAMA_DAMAGE })
       } else if (a.to) {
         const intruder = at(s, a.to)
         if (intruder) {

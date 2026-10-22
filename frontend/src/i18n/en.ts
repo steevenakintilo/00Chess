@@ -20,6 +20,11 @@ export const en: Record<string, string> = {
   'king.p2': "the AI's king",
 
   // -------- menu
+  'music.mute': 'Mute music',
+  'music.unmute': 'Unmute music',
+  'menu.play': 'Play',
+  'menu.howTo': 'How to play',
+  'menu.back': '← Back',
   'menu.vsIa': 'Me vs the AI',
   'menu.iaVsIa': 'AI vs AI',
   'menu.learn': 'Learn the basics',
@@ -33,6 +38,7 @@ export const en: Record<string, string> = {
   'piece.Dabbaba': 'Tax collector',
   'piece.Berolina': 'Queen',
   'piece.Duck': 'Tsar Bomba',
+  'piece.Wildebeest': 'Genkidama',
   'pl.King': 'king',
   'pl.Soldier': 'soldier',
   'pl.Sergeant': 'general',
@@ -40,6 +46,7 @@ export const en: Record<string, string> = {
   'pl.Dabbaba': 'tax collector',
   'pl.Berolina': 'queen',
   'pl.Duck': 'Tsar Bomba',
+  'pl.Wildebeest': 'Genkidama',
 
   // -------- 007
   'move.CHARGER': 'CHARGE',
@@ -102,7 +109,7 @@ export const en: Record<string, string> = {
   'hud.duelsNamed': '007 duels won: {x} {a} — {y} {b}',
   'king.named': "{name}'s king",
   'end.kingOf': "{who}'s king is dead.",
-  'end.piecesOf': "All of {who}'s pieces were captured.",
+  'end.piecesOf': 'K.O.: {who} has no attacking piece left (soldier, general, chief) and can no longer place any.',
   'end.foeWon': '{who} won.',
   'hud.round': 'Round {n}/{max}',
   'hud.time': 'Play time: {time}',
@@ -112,8 +119,8 @@ export const en: Record<string, string> = {
   'end.bothKings': 'Both kings fell at the same time.',
   'end.myKing': 'Your king is dead.',
   'end.foeKing': 'The enemy king is dead.',
-  'end.myPieces': 'All your pieces were captured.',
-  'end.foePieces': 'All enemy pieces were captured.',
+  'end.myPieces': 'K.O.: you have no attacking piece left (soldier, general, chief) and can no longer place any.',
+  'end.foePieces': 'K.O.: the opponent has no attacking piece left (soldier, general, chief) and can no longer place any.',
   'end.limit': 'Round limit of {n} reached. Count: {x} {a} $, {y} {b} $.',
   'end.limitDraw': 'Round limit of {n} reached. Count: {x} {a} $, {y} {b} $. Draw.',
   'end.limitHp': 'Round limit of {n} reached. Damage to the enemy king: {x} {a} HP, {y} {b} HP.',
@@ -133,6 +140,8 @@ export const en: Record<string, string> = {
   'reason.money': 'Not enough dollars',
   'reason.hp': 'Your king already has full HP',
   'reason.cell': 'No free cell',
+  'reason.tsarHp': 'Your king needs more than 2 HP',
+  'reason.genkiGap': 'You need a lead of more than $1000 over the opponent',
   'score.money': 'Money',
   'score.pieces': 'Pieces alive',
   'score.eaten': 'Pieces captured',
@@ -145,6 +154,7 @@ export const en: Record<string, string> = {
   'log.shieldHp': 'Shield spam: {who} loses {n} HP.',
   'log.pass': '{who}: passes.',
   'log.queen': '{who}: the queen sacrifices herself and gives her heart to her king (+1 HP).',
+  'log.genki': '{who}: GENKIDAMA! The enemy king loses {dmg} HP.',
   'log.tsar': '{who}: TSAR BOMBA! {n} enemy piece(s) destroyed, but the thrower\'s king loses {dmg} HP.',
   'log.place': '{who}: places a {piece} on {cell}.',
   'log.placeEat': '{who}: the {piece} placed on {cell} captures {eaten} that was on its last row.',
@@ -187,8 +197,8 @@ export const en: Record<string, string> = {
   'stats.reason.end.bothKings': 'Both kings fell',
   'stats.reason.end.myKing': 'Blue king dead',
   'stats.reason.end.foeKing': 'Red king dead',
-  'stats.reason.end.myPieces': 'All blue pieces captured',
-  'stats.reason.end.foePieces': 'All red pieces captured',
+  'stats.reason.end.myPieces': 'K.O.: no blue attacking piece left',
+  'stats.reason.end.foePieces': 'K.O.: no red attacking piece left',
 
   // -------- learn the basics
   'tut.title': 'Training: the basics of the game',
@@ -246,15 +256,17 @@ export const en: Record<string, string> = {
   'tut.info.Berolina.rules': 'Sacrifices herself and gives 1 HP back to your king. Only usable if your king is missing HP.',
   'tut.info.Duck.moves': 'Does not move: it acts immediately.',
   'tut.info.Duck.rules': 'Removes all enemy pieces, but your king loses 2 HP.',
+  'tut.info.Wildebeest.moves': 'Does not move: it acts immediately.',
+  'tut.info.Wildebeest.rules': 'Requires all your money ($1000, and a lead of more than $1000 over the opponent). Directly removes 3 HP from their king.',
 
   // -------- rules
   'rules.button': 'Rules',
   'rules.title': '00Chess rules',
   'rules.intro':
-    '00Chess mixes Bloons Tower Defense, 007 and chess. Untested version: the rules may change.',
+    '00Chess mixes Bloons Tower Defense, 007 and chess. The game is still in development and testing: the rules may change.',
   'rules.goal.title': 'Goal of the game',
   'rules.goal.p1':
-    "Protect your king ({hp} HP). The game ends when a king is dead, when a player has bought everything and has no piece left (they lose), or when the round limit is reached (to be decided, {rounds} for now). If both kings fall together, it is a draw.",
+    "Protect your king ({hp} HP). The game ends when a king is dead, when a player has no attacking piece (soldier, general, chief) left and can no longer place any (they lose by K.O.: the Tsar Bomba can lead to it), or when the round limit is reached (to be decided, {rounds} for now). If both kings fall together, it is a draw.",
   'rules.goal.p2':
     'At the round limit, the player who dealt the most damage to the enemy king wins (i.e. whose king has the most HP left). If the damage is equal, the richest player wins: **money + price of living pieces + price of captured pieces + {hpValue} $ per remaining king HP**. A destroyed piece no longer counts. If everything is equal: draw. The Tsar Bomba does not count in this tally.',
   'rules.board.title': 'Board and flow',
@@ -263,6 +275,15 @@ export const en: Record<string, string> = {
   'rules.board.p2':
     'Each round starts with a **007**, which earns money. Then, depending on the game mode (see below), the duel winner or both players get **a single action** each: buy and place a piece, move a piece, snipe, swap, sacrifice, or pass. At the end of each round, tax collectors earn their money.',
   'rules.duel.title': 'The 007',
+  'rules.duel.intro':
+    'The 007 is a small duel: both players choose an action **in secret and at the same time**, then both choices are revealed together. Each player has **charges** (ammo) that start at 0. Turns go on until someone scores: **the first to score a point wins the duel**.',
+  'rules.duel.i1':
+    '**Charge**: you gain 1 charge. But if the opponent shoots during that turn, you get hit and they score.',
+  'rules.duel.i2':
+    '**Shoot** (you need at least 1 charge): you spend 1 charge. If the opponent charges, you hit them and you score. If they use a shield, your shot is wasted. If you both shoot, the shots cancel out.',
+  'rules.duel.i3':
+    '**Shield**: it blocks a shot. If nobody shoots, nothing happens. Beware: too many shields in a row lose the duel (see below).',
+  'rules.duel.adv': 'When you have lots of charges, more moves unlock:',
   'rules.duel.l1': '**Charge**: +1 charge. **Shoot**: −1 charge, scores a point if the opponent charges.',
   'rules.duel.l2': '**Shield**: blocks a shot.',
   'rules.duel.l3':
@@ -293,6 +314,8 @@ export const en: Record<string, string> = {
     'Placed anywhere. It does not move. Earns {inc1} $ per round, {inc2} $ with 2 collectors, {inc3} $ with 3. Very generous but very weak: the closer it is to the enemy, the more vulnerable it is.',
   'rules.p.Berolina':
     'Madly in love with the king, she sacrifices herself and gives him her heart: **+1 HP**. Only usable if your king has at most {maxHp} HP. She is not placed on the board.',
+  'rules.p.Wildebeest':
+    'The ultimate attack, a nod to the Genkidama from Dragon Ball Z: it requires all your money (**$1000**), like the energy that has to be gathered to throw it. You also need a lead of more than ${genkiGap} over the opponent. It directly deals **{genki} HP** to their king. It is not placed and can only be used once per game.',
   'rules.p.Duck':
     'The bomb of bombs, a single use: it removes all enemy pieces, but your king loses {tsar} HP. It is not placed on the board.',
   'rules.snipes.title': 'Snipes and swaps',
@@ -302,7 +325,7 @@ export const en: Record<string, string> = {
   'rules.snipes.l4': '**Swaps**: 2 in total for all your chiefs.',
   'rules.special.title': 'Special cells',
   'rules.special.p1':
-    'If an enemy piece is on your last row and you place a soldier, a general or a chief on its cell, it is captured. The tax collector does not capture when placed.',
+    'If an enemy piece is on your last row and you place a soldier, a general, a chief or a tax collector on its cell, it is captured.',
   'rules.special.p2':
     'Piece dynamics: the soldier captures the chief, the general captures the soldier, the chief captures the general. Prices and numbers differ, so it is an uneven rock-paper-scissors.',
 }

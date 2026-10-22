@@ -38,7 +38,7 @@ export function ContinueButton({ onClick, disabled, label }: BtnProps & { label?
   )
 }
 
-export function BuyButton({ price, onClick, disabled, active }: BtnProps & { price: number }) {
+export function BuyButton({ price, onClick, disabled, active }: BtnProps & { price?: number }) { // price absent : achat gratuit
   const { t } = useI18n()
   return (
     <button className={`btn-buy${active ? ' btn-buy--active' : ''}`} onClick={onClick} disabled={disabled}>
@@ -49,7 +49,7 @@ export function BuyButton({ price, onClick, disabled, active }: BtnProps & { pri
           <circle cx="16.5" cy="19" r="1.6" fill="#1a1a1a" />
         </svg>
       </span>
-      {t('btn.buy')} <span className="btn-buy__price">{price} $</span>
+      {t('btn.buy')} {price !== undefined && <span className="btn-buy__price">{price} $</span>}
     </button>
   )
 }
@@ -137,6 +137,20 @@ export const LearnIcon = (
     <path d="M9 18h6" />
     <path d="M10 21h4" />
     <path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
+  </svg>
+)
+
+export const PlayIcon = (
+  <svg {...iconProps}>
+    <path d="M8 5l11 7-11 7z" />
+  </svg>
+)
+
+export const HelpIcon = (
+  <svg {...iconProps}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1 1-1.1 1.8" />
+    <circle cx="12" cy="17" r="0.8" fill="#1a1a1a" />
   </svg>
 )
 

@@ -8,11 +8,13 @@ import Online from './pages/online'
 import Room from './pages/room'
 import { AuthProvider } from './auth/AuthContext'
 import { LanguageProvider, LanguageSwitcher } from './i18n'
+import MusicToggle from './components/MusicToggle'
 
 export default function App() {
   return (
     <LanguageProvider>
       <LanguageSwitcher />
+      <MusicToggle />
       <AuthProvider>
       <BrowserRouter>
       <Routes>

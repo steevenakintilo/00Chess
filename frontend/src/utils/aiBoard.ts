@@ -35,7 +35,7 @@ const gauss = () => {
 }
 
 // Le Facile ne se sert ni de la Tsar Bomba, ni de la reine, ni du swap : trois choses compliquées pour un débutant.
-const isAdvanced = (a: Action) => a.kind === 'swap' || (a.kind === 'buy' && (a.item === 'Duck' || a.item === 'Berolina'))
+const isAdvanced = (a: Action) => a.kind === 'swap' || (a.kind === 'buy' && (a.item === 'Duck' || a.item === 'Berolina' || a.item === 'Wildebeest'))
 
 function easyAction(s: GameState, me: PlayerId): Action {
   const actions = legalActions(s, me).filter(a => !isAdvanced(a))
@@ -82,7 +82,7 @@ function dangerousReplies(s: GameState, foe: PlayerId): Action[] {
   for (const a of legalActions(s, foe)) {
     if (a.kind === 'kamikaze' || a.kind === 'snipe') out.push(a)
     else if (a.kind === 'move' && s.board[a.to.r][a.to.c]) out.push(a)
-    else if (a.kind === 'buy' && (a.item === 'Duck' || (a.to && s.board[a.to.r][a.to.c]))) out.push(a)
+    else if (a.kind === 'buy' && (a.item === 'Duck' || a.item === 'Wildebeest' || (a.to && s.board[a.to.r][a.to.c]))) out.push(a)
   }
   return out
 }

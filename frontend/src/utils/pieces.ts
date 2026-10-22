@@ -10,6 +10,7 @@ import Blue_Dabbaba from '../assets/game_asset/Blue_Dabbaba.svg'
 import Blue_Duck from '../assets/game_asset/Blue_Duck.svg'
 import Blue_Sergeant from '../assets/game_asset/Blue_Sergeant.svg'
 import Blue_Soldier from '../assets/game_asset/Blue_Soldier.svg'
+import Blue_Wildebeest from '../assets/game_asset/Blue_Wildebeest.svg'
 import Red_Archbishop from '../assets/game_asset/Red_Archbishop.svg'
 import Red_Berolina from '../assets/game_asset/Red_Berolina.svg'
 import Red_Chariot from '../assets/game_asset/Red_Chariot.svg'
@@ -22,6 +23,7 @@ import Red_Dabbaba from '../assets/game_asset/Red_Dabbaba.svg'
 import Red_Duck from '../assets/game_asset/Red_Duck.svg'
 import Red_Sergeant from '../assets/game_asset/Red_Sergeant.svg'
 import Red_Soldier from '../assets/game_asset/Red_Soldier.svg'
+import Red_Wildebeest from '../assets/game_asset/Red_Wildebeest.svg'
 
 export const pieces = {
   player1: {
@@ -37,6 +39,7 @@ export const pieces = {
     Duck: Blue_Duck,
     Sergeant: Blue_Sergeant,
     Soldier: Blue_Soldier,
+    Wildebeest: Blue_Wildebeest,
   },
   player2: {
     Archbishop: Red_Archbishop,
@@ -51,6 +54,7 @@ export const pieces = {
     Duck: Red_Duck,
     Sergeant: Red_Sergeant,
     Soldier: Red_Soldier,
+    Wildebeest: Red_Wildebeest,
   },
 } as const
 
@@ -70,6 +74,7 @@ export const pieceImages: Record<string, string> = {
   Blue_Duck,
   Blue_Sergeant,
   Blue_Soldier,
+  Blue_Wildebeest,
   Red_Archbishop,
   Red_Berolina,
   Red_Chariot,
@@ -82,4 +87,5 @@ export const pieceImages: Record<string, string> = {
   Red_Duck,
   Red_Sergeant,
   Red_Soldier,
+  Red_Wildebeest,
 }

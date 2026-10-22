@@ -49,7 +49,7 @@ export function ScoreTable({ game, names }: { game: GameState; names: [string, s
         </tr>
       </thead>
       <tbody>
-        {line(t('score.money'), a.money, b.money)}
+        {!game.infinite && line(t('score.money'), a.money, b.money)}
         {line(t('score.pieces'), a.pieces, b.pieces)}
         {line(t('score.eaten'), a.eaten, b.eaten)}
         {line(t('score.hp', { n: HP_VALUE }), a.hp, b.hp)}

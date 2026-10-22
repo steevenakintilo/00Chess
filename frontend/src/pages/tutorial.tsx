@@ -124,7 +124,7 @@ export default function Tutorial() {
       setPlacing(null)
       return
     }
-    if (item === 'Berolina' || item === 'Duck') {
+    if (item === 'Berolina' || item === 'Duck' || item === 'Wildebeest') {
       perform({ kind: 'buy', item }, actor)
       return
     }

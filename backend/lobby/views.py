@@ -7,7 +7,7 @@ from rest_framework.throttling import ScopedRateThrottle
 
 from accounts.serializers import UserSerializer
 
-from .models import DISCONNECT_AFTER, GAME_MODES, MOVES_007, ROOM_LIFETIME, GameEvent, Move007, Room
+from .models import DISCONNECT_AFTER, GAME_MODES, MOVES_007, PACES, ROOM_LIFETIME, GameEvent, Move007, Room
 
 ACTION_KINDS = {'pass', 'buy', 'move', 'kamikaze', 'snipe', 'swap'}
 
@@ -35,6 +35,7 @@ def _room_data(room: Room) -> dict:
         'exchange': room.exchange,
         'actor': room.actor,
         'mode': room.mode,
+        'pace': room.pace,
     }
 
 
@@ -77,8 +78,11 @@ def create_room(request):
     mode = str(request.data.get('mode', 'winner'))
     if mode not in GAME_MODES:
         return _err('invalid_mode', status.HTTP_400_BAD_REQUEST)
+    pace = str(request.data.get('pace', 'blitz'))
+    if pace not in PACES:
+        return _err('invalid_pace', status.HTTP_400_BAD_REQUEST)
     Room.objects.filter(host=request.user).delete()
-    room = Room.objects.create(host=request.user, mode=mode)
+    room = Room.objects.create(host=request.user, mode=mode, pace=pace)
     return Response(_room_data(room), status=status.HTTP_201_CREATED)
 
 
@@ -103,7 +107,7 @@ def join_room(request):
         room.round = 1
         room.exchange = 1
         room.updated_at = timezone.now()
-        _add_event(room, 'start', {'host': room.host.username, 'guest': request.user.username, 'mode': room.mode})
+        _add_event(room, 'start', {'host': room.host.username, 'guest': request.user.username, 'mode': room.mode, 'pace': room.pace})
         room.save()
     return Response(_room_data(room))
 

@@ -6,6 +6,7 @@ import RulesButton from '../components/Rules'
 import { ContinueButton, GameButton } from '../components/GameButtons'
 import { useI18n } from '../i18n'
 import ModePicker, { useStoredGameMode } from '../components/ModePicker'
+import PacePicker, { useStoredPace } from '../components/PacePicker'
 
 const ERROR_CODES = [
   'invalid_credentials', 'taken', 'invalid', 'password_too_short', 'blank', 'required', 'max_length', 'throttled', 'network',
@@ -93,6 +94,7 @@ function Lobby() {
   const errorText = useErrorText()
   const [code, setCode] = useState('')
   const [gameMode, setGameMode] = useStoredGameMode()
+  const [pace, setPace] = useStoredPace()
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -102,7 +104,7 @@ function Lobby() {
     setError('')
     setBusy(true)
     try {
-      const room = await api<ApiRoom>('/api/rooms/', { method: 'POST', body: { mode: gameMode } })
+      const room = await api<ApiRoom>('/api/rooms/', { method: 'POST', body: { mode: gameMode, pace } })
       navigate(`/online/room/${room.code}`)
     } catch (err) {
       setError(errorText(err))
@@ -147,6 +149,9 @@ function Lobby() {
 
       <div className="w-100">
         <ModePicker value={gameMode} onChange={setGameMode} />
+      </div>
+      <div className="w-100">
+        <PacePicker value={pace} onChange={setPace} />
       </div>
       <ContinueButton label={t('online.playFriend')} disabled={busy} onClick={createRoom} />
 

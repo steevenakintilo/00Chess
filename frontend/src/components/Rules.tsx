@@ -3,7 +3,7 @@ import Modal from './Modal'
 import { MenuButton } from './GameButtons'
 import { useI18n } from '../i18n'
 import { shopItems } from '../utils/shop'
-import { KING_HP, HP_VALUE, MAX_ROUNDS, SNIPE_UNLOCK_ROUND, COLLECTOR_INCOME, TSAR_SELF_DAMAGE } from '../utils/engine'
+import { KING_HP, HP_VALUE, MAX_ROUNDS, SNIPE_UNLOCK_ROUND, COLLECTOR_INCOME, TSAR_SELF_DAMAGE, GENKIDAMA_DAMAGE, GENKIDAMA_GAP } from '../utils/engine'
 import { PTS, SHIELD_LIMIT, WIN_REWARDS } from '../utils/game007'
 
 const BookIcon = (
@@ -45,12 +45,14 @@ function RulesContent() {
     inc2: COLLECTOR_INCOME[2],
     inc3: COLLECTOR_INCOME[3],
     tsar: TSAR_SELF_DAMAGE,
+    genki: GENKIDAMA_DAMAGE,
+    genkiGap: GENKIDAMA_GAP,
   }
   const p = (key: string) => <p>{tr(key, P)}</p>
 
   return (
     <div className="text-start" style={{ fontSize: '0.95rem' }}>
-      <p className="text-secondary">{t('rules.intro')}</p>
+      <p>{t('rules.intro')}</p>
 
       <Section title={t('rules.goal.title')}>
         {p('rules.goal.p1')}
@@ -66,12 +68,20 @@ function RulesContent() {
         <ul>
           <li>{tr('rules.modes.winner', P)}</li>
           <li>{tr('rules.modes.turns', P)}</li>
+          <li>{tr('rules.modes.classic', P)}</li>
         </ul>
       </Section>
 
       <Section title={t('rules.duel.title')}>
+        {p('rules.duel.intro')}
         <ul>
-          {['l1', 'l2', 'l3', 'l4', 'l5', 'l6'].map(k => (
+          {['i1', 'i2', 'i3'].map(k => (
+            <li key={k}>{tr(`rules.duel.${k}`, P)}</li>
+          ))}
+        </ul>
+        {p('rules.duel.adv')}
+        <ul>
+          {['l3', 'l4', 'l5', 'l6'].map(k => (
             <li key={k}>{tr(`rules.duel.${k}`, P)}</li>
           ))}
         </ul>
@@ -102,7 +112,7 @@ function RulesContent() {
       </Section>
 
       <Section title={t('rules.pieces.title')}>
-        {['Soldier', 'Sergeant', 'Archbishop', 'Dabbaba', 'Berolina', 'Duck'].map(k => (
+        {['Soldier', 'Sergeant', 'Archbishop', 'Dabbaba', 'Berolina', 'Duck', 'Wildebeest'].map(k => (
           <div key={k}>
             <h4 className="h6">{t(`piece.${k}`)}</h4>
             {p(`rules.p.${k}`)}

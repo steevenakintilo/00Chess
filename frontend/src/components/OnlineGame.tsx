@@ -18,6 +18,7 @@ import {
   moveDests,
   other,
   placementCells,
+  UNLIMITED_ROUNDS,
   posKey,
   snipeLocked,
   snipeTargets,
@@ -30,6 +31,7 @@ import {
 import { SHIELD_LIMIT, WIN_REWARDS, PTS, mirror, playerMoves, rewardFor, type Move, type Outcome } from '../utils/game007'
 import type { Msg } from '../utils/msg'
 import { playerOf, replay, winnerOf, type NetEvent } from '../online/replay'
+import { useGameSounds } from '../utils/useGameSounds'
 
 type Mode = 'move' | 'snipe' | 'swap'
 type Highlight = { kind: 'place' | 'move' | 'capture' | 'snipe' | 'swap'; action: Action }
@@ -75,6 +77,7 @@ export default function OnlineGame({ code, events, meta, offline, refresh, onLea
   const foeId = other(meId)
   const g = useMemo(() => replay(events), [events])
   const game = g.eng
+  useGameSounds(game) // mêmes événements rejoués chez les deux joueurs : chacun entend le même son (à la seconde près)
   const myName = side === 'host' ? g.names.host : g.names.guest
   const foeName = side === 'host' ? g.names.guest : g.names.host
 
@@ -165,7 +168,7 @@ export default function OnlineGame({ code, events, meta, offline, refresh, onLea
     if (!myTurn || !canBuy(game, meId, item)) return
     if (item === 'Duck') {
       if (window.confirm(t('shop.tsarConfirm', { n: TSAR_SELF_DAMAGE }))) act({ kind: 'buy', item })
-    } else if (item === 'Berolina') {
+    } else if (item === 'Berolina' || item === 'Wildebeest') {
       act({ kind: 'buy', item })
     } else {
       setShopItem(item)
@@ -268,7 +271,7 @@ export default function OnlineGame({ code, events, meta, offline, refresh, onLea
               b: foe.duelWins,
             })}
           </span>
-          <span>{t('hud.round', { n: Math.min(game.round, game.maxRounds), max: game.maxRounds })}</span>
+          <span>{t('hud.round', { n: Math.min(game.round, game.maxRounds), max: game.maxRounds >= UNLIMITED_ROUNDS ? '∞' : game.maxRounds })}</span>
           <span>{t('gm.current', { mode: t(`gm.${g.mode}`) })}</span>
         </div>
       </div>

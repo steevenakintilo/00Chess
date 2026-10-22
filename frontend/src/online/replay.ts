@@ -5,6 +5,8 @@ import {
   applyAction,
   applyDuelResult,
   finishRound,
+  MAX_ROUNDS,
+  UNLIMITED_ROUNDS,
   newGameState,
   type Action,
   type GameState,
@@ -74,6 +76,8 @@ export function applyEvent(g: OnlineGame, e: NetEvent): OnlineGame {
         started: true,
         names: { host: String(p.host), guest: String(p.guest) },
         mode: p.mode === 'turns' ? 'turns' : 'winner',
+        // « normal » : pas de limite de rounds ; « blitz » (et les anciennes parties) : 50 rounds
+        eng: newGameState(p.pace === 'normal' ? UNLIMITED_ROUNDS : MAX_ROUNDS),
       }
 
     case 'reveal': {

@@ -15,6 +15,8 @@ DISCONNECT_AFTER = timedelta(seconds=30)
 
 GAME_MODES = ('winner', 'turns')  # winner : le gagnant du duel joue ; turns : tour par tour (les deux jouent chaque round)
 
+PACES = ('blitz', 'normal')  # blitz : partie limitée à 50 rounds ; normal : pas de limite, le premier qui gagne gagne
+
 MOVES_007 = ('CHARGER', 'BOUCLIER', 'TIRER', 'GROS TIR', 'PLUS DE POINTS', 'SWAP')
 
 
@@ -54,6 +56,7 @@ class Room(models.Model):
     exchange = models.PositiveIntegerField(default=1)  # n-ième échange de coups dans le duel en cours
     actor = models.CharField(max_length=5, null=True, blank=True)  # 'host' / 'guest' : qui joue en phase action
     mode = models.CharField(max_length=10, default='winner')  # voir GAME_MODES
+    pace = models.CharField(max_length=10, default='blitz')  # voir PACES
     pending = models.JSONField(default=list, blank=True)  # joueurs qui joueront encore ce round, après `actor`
     reports = models.JSONField(default=dict, blank=True)  # comptes rendus des deux joueurs (accord)
     last_seq = models.PositiveIntegerField(default=0)

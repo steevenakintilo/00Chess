@@ -10,9 +10,10 @@ import { pieceImages } from '../utils/pieces'
 import { shopItems } from '../utils/shop'
 import LevelPicker, { useStoredLevel } from '../components/LevelPicker'
 import ModePicker, { useStoredGameMode } from '../components/ModePicker'
-import { actorsAfterDuel } from '../utils/rounds'
+import { actorsAfterDuel, GAME_MODES, hasDuel, type GameMode } from '../utils/rounds'
 import { playTurnLevel } from '../utils/aiBoard'
 import { newAiMemory, type AiMemory } from '../utils/game007'
+import { useGameSounds } from '../utils/useGameSounds'
 import { useI18n } from '../i18n'
 import {
   applyAction,
@@ -71,9 +72,10 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 export default function VsIA() {
   const { t, msg } = useI18n()
   const [maxRounds, setMaxRounds] = useState(MAX_ROUNDS) // choisi avant de commencer
-  const [game, setGame] = useState<GameState>(() => newGameState(MAX_ROUNDS))
   const [level, setLevel] = useStoredLevel('aiLevel')
-  const [gameMode, setGameMode] = useStoredGameMode()
+  const [gameMode, setGameMode] = useStoredGameMode('gameMode', GAME_MODES)
+  const classic = !hasDuel(gameMode) // mode « Classique » : ni 007 ni argent
+  const [game, setGame] = useState<GameState>(() => newGameState(MAX_ROUNDS, classic))
   // joueurs qui doivent encore jouer ce round après le joueur (mode « tour par tour » : l'IA peut jouer après toi)
   const [pending, setPending] = useState<PlayerId[]>([])
   // l'IA Difficile se souvient de tes habitudes pendant toute la partie (les autres niveaux repartent de zéro à chaque duel)
@@ -93,6 +95,7 @@ export default function VsIA() {
     return () => clearInterval(id)
   }, [game.result, phase])
 
+  useGameSounds(game)
   const me = game.players.p1
   const foe = game.players.p2
   const myTurn = phase === 'action' && !game.result
@@ -113,9 +116,17 @@ export default function VsIA() {
     aiMemory.current = newAiMemory()
     setPending([])
     setElapsed(0)
-    setGame(newGameState(maxRounds))
+    setGame(newGameState(maxRounds, classic))
     setPhase('setup')
     resetSelection()
+  }
+
+  // Le mode ne change pas en cours de partie entre « Classique » (sans argent) et les modes avec 007.
+  function changeMode(m: GameMode) {
+    const started = phase !== 'setup'
+    if (started && !hasDuel(m) !== classic) return
+    setGameMode(m)
+    if (!started) setGame(newGameState(maxRounds, !hasDuel(m)))
   }
 
   // Fait jouer l'IA tant que c'est à elle ; s'arrête dès que c'est à toi (et rend ceux qui jouent après toi).
@@ -129,12 +140,23 @@ export default function VsIA() {
     return { state: cur, waitingForYou: false, rest: [] }
   }
 
+  // Début d'un round : un duel 007, sauf en mode « Classique » où les joueurs jouent directement.
+  function startRound(g: GameState) {
+    if (classic) runActors(g, actorsAfterDuel(gameMode, 'draw', g.round))
+    else setPhase('duel')
+  }
+
   // Fin d'un duel 007 : argent, puis ceux qui doivent jouer ce round jouent (l'IA joue toute seule).
   function onDuelFinish(outcome: Outcome, rewards: { p1: number; p2: number }, hpLoss: { p1: number; p2: number }) {
-    let g = applyDuelResult(game, rewards, hpLoss, outcome)
+    const g = applyDuelResult(game, rewards, hpLoss, outcome)
+    runActors(g, actorsAfterDuel(gameMode, outcome ?? 'draw', g.round))
+  }
+
+  // Ceux qui doivent jouer ce round jouent : l'IA joue toute seule, on s'arrête quand c'est à toi.
+  function runActors(g: GameState, actors: PlayerId[]) {
     const before = g.log.length
     if (!g.result) {
-      const r = advance(g, actorsAfterDuel(gameMode, outcome ?? 'draw', g.round))
+      const r = advance(g, actors)
       g = r.state
       if (!g.result && r.waitingForYou) {
         setAiLog(g.log.slice(Math.min(before, g.log.length)))
@@ -163,7 +185,7 @@ export default function VsIA() {
     if (aiPlaysAfter) {
       setAiLog(g.log.slice(Math.min(before, g.log.length)))
       setPhase('between') // on laisse le temps de lire ce que l'IA vient de jouer
-    } else setPhase('duel')
+    } else startRound(g)
     resetSelection()
   }
 
@@ -173,7 +195,7 @@ export default function VsIA() {
       if (window.confirm(t('shop.tsarConfirm', { n: TSAR_SELF_DAMAGE }))) {
         play({ kind: 'buy', item })
       }
-    } else if (item === 'Berolina') {
+    } else if (item === 'Berolina' || item === 'Wildebeest') {
       play({ kind: 'buy', item })
     } else {
       setShopItem(item)
@@ -243,15 +265,15 @@ export default function VsIA() {
         <div className="hud__row">
           <span className="hud__name">{t('hud.you')}</span>
           <Stat label={t('hud.life')} value={me.hp} />
-          <Stat label={t('hud.dollars')} value={`${me.money} $`} />
+          {!classic && <Stat label={t('hud.dollars')} value={`${me.money} $`} />}
         </div>
         <div className="hud__row hud__row--foe">
           <span className="hud__name">{t('hud.aiLevel', { level: t(`ai.${level}`) })}</span>
           <Stat label={t('hud.life')} value={foe.hp} />
-          <Stat label={t('hud.dollars')} value={`${foe.money} $`} />
+          {!classic && <Stat label={t('hud.dollars')} value={`${foe.money} $`} />}
         </div>
         <div className="hud__foot">
-          <span>{t('hud.duels', { a: me.duelWins, b: foe.duelWins })}</span>
+          {!classic && <span>{t('hud.duels', { a: me.duelWins, b: foe.duelWins })}</span>}
           <span>{t('hud.round', { n: Math.min(game.round, game.maxRounds), max: game.maxRounds })}</span>
           <span>{t('hud.time', { time: formatTime(elapsed) })}</span>
         </div>
@@ -268,7 +290,12 @@ export default function VsIA() {
 
         {/* Panneau de droite : phase en cours, actions, résultat et journal */}
         <div className="d-flex flex-column gap-3 pt-lg-5" style={{ width: 'min(100%, 320px)' }}>
-          <ModePicker value={gameMode} onChange={setGameMode} />
+          <ModePicker
+            value={gameMode}
+            onChange={changeMode}
+            modes={GAME_MODES}
+            disabledModes={phase === 'setup' ? [] : GAME_MODES.filter(m => !hasDuel(m) !== classic)}
+          />
           <LevelPicker value={level} onChange={changeLevel} />
 
           {/* Fin de partie */}
@@ -296,11 +323,11 @@ export default function VsIA() {
                   onChange={e => {
                     const n = Math.max(1, Math.floor(Number(e.target.value)) || 1)
                     setMaxRounds(n)
-                    setGame(newGameState(n)) // la partie n'a pas commencé : on repart d'un état neuf avec la nouvelle limite
+                    setGame(newGameState(n, classic)) // la partie n'a pas commencé : on repart d'un état neuf avec la nouvelle limite
                   }}
                 />
               </label>
-              <ContinueButton label={t('btn.start')} onClick={() => setPhase('duel')} />
+              <ContinueButton label={t('btn.start')} onClick={() => startRound(game)} />
             </div>
           )}
 
@@ -317,19 +344,19 @@ export default function VsIA() {
           )}
 
           {!game.result && phase === 'between' && (
-            <div className="text-center">
+            <div className="text-center order-first order-lg-0">
               {aiLog.slice(-6).map((l, i) => (
                 <p key={i} className="mb-1">{msg(l)}</p>
               ))}
-              <RoundButton onClick={() => setPhase('duel')} />
+              <RoundButton onClick={() => startRound(game)} />
             </div>
           )}
 
           {myTurn && (
-            <div className="text-center">
+            <div className="text-center order-first order-lg-0"> {/* sur mobile : au-dessus des réglages (mode, niveau de l'IA) */}
               <p className="fw-bold mb-2">{t('turn.yourTurn')}</p>
               {selectedPiece && (
-                <div className="d-flex justify-content-center gap-2 mb-2">
+                <div className="d-flex justify-content-center gap-2 mb-3">
                   <GameButton active={mode === 'move'} onClick={() => setMode('move')}>
                     {t('mode.move')}
                   </GameButton>
@@ -381,13 +408,15 @@ export default function VsIA() {
           >
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h2 className="h4 m-0">{t('shop.title')}</h2>
-              <span className="d-flex align-items-center gap-1 fw-bold fs-4">
-                <span className="small text-secondary">{t('hud.dollars')}</span>
-                {me.money} $
-              </span>
+              {!classic && (
+                <span className="d-flex align-items-center gap-1 fw-bold fs-4">
+                  <span className="small text-secondary">{t('hud.dollars')}</span>
+                  {me.money} $
+                </span>
+              )}
             </div>
         <div className="row row-cols-2 row-cols-md-3 g-3">
-          {shopItems.map(item => {
+          {shopItems.filter(item => !classic || (item.key !== 'Berolina' && item.key !== 'Duck' && item.key !== 'Wildebeest')).map(item => {
             const key = item.key as ShopKey
             const ok = myTurn && canBuy(game, 'p1', key)
             return (
@@ -400,7 +429,7 @@ export default function VsIA() {
                 />
                 <div className="small">{t(`piece.${item.key}`)}</div>
                 <div className="small text-secondary">{me.bought[key]}/{maxOf(key)}</div>
-                <BuyButton price={item.price} active={shopItem === key} disabled={!ok} onClick={() => buy(key)} />
+                <BuyButton price={classic ? undefined : item.price}active={shopItem === key} disabled={!ok} onClick={() => buy(key)} />
                 {!ok && <div className="small text-danger mt-1">{t(buyBlockReason(game, 'p1', key) ?? '')}</div>}
               </div>
             )

@@ -11,4 +11,5 @@ export const shopItems: ShopItem[] = [
   { key: 'Berolina', price: 250, max: 1 },
   { key: 'Dabbaba', price: 200, max: 3 },
   { key: 'Duck', price: 500, max: 1 },
+  { key: 'Wildebeest', price: 1000, max: 1 }, // Genkidama : 3 PV au roi adverse
 ]

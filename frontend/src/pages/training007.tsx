@@ -44,6 +44,7 @@ export default function Training007() {
       </p>
 
       <LevelPicker
+        describe={false}
         value={level}
         onChange={l => {
           aiMemory.current = newAiMemory()

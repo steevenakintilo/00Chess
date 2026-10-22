@@ -10,7 +10,7 @@ export const WIN_SCORE = 1 // un seul tour gagnant décide du duel (V4)
 export const WIN_REWARDS = [0, 15, 30, 50, 80]
 const LOSER_REWARD = 5
 export const SHIELD_LIMIT = 3 // boucliers d'affilée : au 3e, on perd le match (les deux en même temps : -1 PV de roi chacun)
-const IA_TEMPERATURE = 0.3
+const IA_TEMPERATURE = 0.25 // plus bas = l'IA Normal choisit plus souvent son meilleur coup (0.3 avant : trop proche du Facile)
 const CHARGE_VALUE = 0.15
 const WIN_VALUE = 100
 

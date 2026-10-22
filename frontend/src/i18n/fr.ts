@@ -20,6 +20,11 @@ export const fr: Record<string, string> = {
   'king.p2': "le roi de l'IA",
 
   // -------- menu
+  'music.mute': 'Couper la musique',
+  'music.unmute': 'Activer la musique',
+  'menu.play': 'Jouer',
+  'menu.howTo': 'Comment jouer',
+  'menu.back': '← Retour',
   'menu.vsIa': "Moi contre l'IA",
   'menu.iaVsIa': 'IA contre IA',
   'menu.learn': 'Apprendre les bases',
@@ -33,6 +38,7 @@ export const fr: Record<string, string> = {
   'piece.Dabbaba': "Récolteur d'impôts",
   'piece.Berolina': 'Reine',
   'piece.Duck': 'Tsar Bomba',
+  'piece.Wildebeest': 'Genkidama',
   'pl.King': 'roi',
   'pl.Soldier': 'soldat',
   'pl.Sergeant': 'général',
@@ -40,6 +46,7 @@ export const fr: Record<string, string> = {
   'pl.Dabbaba': "récolteur d'impôts",
   'pl.Berolina': 'reine',
   'pl.Duck': 'Tsar Bomba',
+  'pl.Wildebeest': 'Genkidama',
 
   // -------- 007
   'move.CHARGER': 'CHARGER',
@@ -102,7 +109,7 @@ export const fr: Record<string, string> = {
   'hud.duelsNamed': 'Duels 007 gagnés : {x} {a} — {y} {b}',
   'king.named': 'le roi de {name}',
   'end.kingOf': 'Le roi de {who} est mort.',
-  'end.piecesOf': 'Toutes les pièces de {who} ont été mangées.',
+  'end.piecesOf': "K.O. : {who} n'a plus de pièce d'attaque (soldat, général, chef) et ne peut plus en poser.",
   'end.foeWon': '{who} a gagné.',
   'hud.round': 'Round {n}/{max}',
   'hud.time': 'Temps de jeu : {time}',
@@ -112,8 +119,8 @@ export const fr: Record<string, string> = {
   'end.bothKings': 'Les deux rois sont tombés en même temps.',
   'end.myKing': 'Ton roi est mort.',
   'end.foeKing': 'Le roi adverse est mort.',
-  'end.myPieces': 'Toutes tes pièces ont été mangées.',
-  'end.foePieces': 'Toutes les pièces adverses ont été mangées.',
+  'end.myPieces': "K.O. : tu n'as plus de pièce d'attaque (soldat, général, chef) et tu ne peux plus en poser.",
+  'end.foePieces': "K.O. : l'adversaire n'a plus de pièce d'attaque (soldat, général, chef) et ne peut plus en poser.",
   'end.limit': 'Limite de {n} rounds atteinte. Décompte : {x} {a} $, {y} {b} $.',
   'end.limitDraw': 'Limite de {n} rounds atteinte. Décompte : {x} {a} $, {y} {b} $. Égalité.',
   'end.limitHp': 'Limite de {n} rounds atteinte. Dégâts au roi adverse : {x} {a} PV, {y} {b} PV.',
@@ -133,6 +140,8 @@ export const fr: Record<string, string> = {
   'reason.money': 'Pas assez de dollars',
   'reason.hp': 'Ton roi a déjà tous ses PV',
   'reason.cell': 'Aucune case libre',
+  'reason.tsarHp': 'Ton roi doit avoir plus de 2 PV',
+  'reason.genkiGap': "Il faut plus de 1000 $ d'avance sur l'adversaire",
   'score.money': 'Argent',
   'score.pieces': 'Pièces en vie',
   'score.eaten': 'Pièces mangées',
@@ -145,6 +154,7 @@ export const fr: Record<string, string> = {
   'log.shieldHp': 'Bouclier spammé : {who} perd {n} PV.',
   'log.pass': '{who} : passe.',
   'log.queen': '{who} : la reine se sacrifie et donne son cœur à son roi (+1 PV).',
+  'log.genki': '{who} : GENKIDAMA ! Le roi adverse perd {dmg} PV.',
   'log.tsar': '{who} : TSAR BOMBA ! {n} pièce(s) ennemie(s) détruite(s), mais le roi du lanceur perd {dmg} PV.',
   'log.place': '{who} : pose un {piece} en {cell}.',
   'log.placeEat': '{who} : le {piece} posé en {cell} mange {eaten} qui était sur sa dernière ligne.',
@@ -187,8 +197,8 @@ export const fr: Record<string, string> = {
   'stats.reason.end.bothKings': 'Les deux rois sont tombés',
   'stats.reason.end.myKing': 'Roi bleu mort',
   'stats.reason.end.foeKing': 'Roi rouge mort',
-  'stats.reason.end.myPieces': 'Toutes les pièces bleues mangées',
-  'stats.reason.end.foePieces': 'Toutes les pièces rouges mangées',
+  'stats.reason.end.myPieces': "K.O. : plus de pièce d'attaque bleue",
+  'stats.reason.end.foePieces': "K.O. : plus de pièce d'attaque rouge",
 
   // -------- apprendre les bases
   'tut.title': 'Entraînement : les bases du jeu',
@@ -246,15 +256,17 @@ export const fr: Record<string, string> = {
   'tut.info.Berolina.rules': "Se sacrifie et redonne 1 PV à ton roi. Utilisable seulement si ton roi n'a pas tous ses PV.",
   'tut.info.Duck.moves': 'Ne bouge pas : elle agit tout de suite.',
   'tut.info.Duck.rules': 'Supprime toutes les pièces ennemies, mais ton roi perd 2 PV.',
+  'tut.info.Wildebeest.moves': 'Ne bouge pas : elle agit tout de suite.',
+  'tut.info.Wildebeest.rules': "Nécessite tout ton argent (1000 $, et plus de 1000 $ d'avance sur l'adversaire). Retire directement 3 PV à son roi.",
 
   // -------- règles
   'rules.button': 'Règles',
   'rules.title': 'Règles du 00Chess',
   'rules.intro':
-    'Le 00Chess mélange Bloons Tower Defense, 007 et échecs. Version non testée : les règles peuvent changer.',
+    'Le 00Chess mélange Bloons Tower Defense, 007 et échecs. Le jeu est en cours de développement et de test : les règles peuvent changer.',
   'rules.goal.title': 'But du jeu',
   'rules.goal.p1':
-    "Protège ton roi ({hp} PV). La partie finit quand un roi est mort, quand un joueur a tout acheté et n'a plus aucune pièce (il perd), ou quand la limite de rounds est atteinte (à déterminer, {rounds} pour l'instant). Si les deux rois tombent ensemble, c'est une égalité.",
+    "Protège ton roi ({hp} PV). La partie finit quand un roi est mort, quand un joueur n'a plus aucune pièce d'attaque (soldat, général, chef) et ne peut plus en poser (il perd par K.O. : la Tsar Bomba peut y mener), ou quand la limite de rounds est atteinte (à déterminer, {rounds} pour l'instant). Si les deux rois tombent ensemble, c'est une égalité.",
   'rules.goal.p2':
     "À la limite de rounds, celui qui a fait le plus de dégâts au roi adverse gagne (donc dont le roi a le plus de PV restants). S'ils ont fait autant de dégâts, le plus riche gagne : **argent + prix des pièces en vie + prix des pièces mangées + {hpValue} $ par PV restant du roi**. Une pièce éliminée ne compte plus. Si tout est égal : égalité. La Tsar Bomba ne compte pas dans ce décompte.",
   'rules.board.title': 'Plateau et déroulement',
@@ -263,6 +275,15 @@ export const fr: Record<string, string> = {
   'rules.board.p2':
     "Chaque round commence par un **007**, qui rapporte de l'argent. Ensuite, selon le mode de jeu (voir plus bas), le gagnant du duel ou les deux joueurs ont **une seule action** chacun : acheter et poser une pièce, déplacer une pièce, sniper, swap, suicide, ou passer. À la fin de chaque round, les récolteurs rapportent leur argent.",
   'rules.duel.title': 'Le 007',
+  'rules.duel.intro':
+    "Le 007 est un petit duel : les deux joueurs choisissent **en secret et en même temps** une action, puis les deux choix sont révélés ensemble. Chacun a des **recharges** (des munitions) qui commencent à 0. On enchaîne les tours jusqu'à ce que quelqu'un marque : **le premier qui marque un point gagne le duel**.",
+  'rules.duel.i1':
+    "**Charger** : tu gagnes 1 recharge. Mais si l'adversaire tire pendant ce tour, tu es touché et il marque.",
+  'rules.duel.i2':
+    "**Tirer** (il faut au moins 1 recharge) : tu dépenses 1 recharge. Si l'adversaire charge, tu le touches et tu marques. S'il met un bouclier, ton tir est perdu. Si vous tirez tous les deux, les tirs s'annulent.",
+  'rules.duel.i3':
+    "**Bouclier** : il pare un tir. Si personne ne tire, il ne se passe rien. Attention : trop de boucliers d'affilée font perdre le duel (voir plus bas).",
+  'rules.duel.adv': 'Quand tu as beaucoup de recharges, d\'autres coups se débloquent :',
   'rules.duel.l1': "**Charger** : +1 recharge. **Tirer** : −1 recharge, marque un point si l'adversaire charge.",
   'rules.duel.l2': '**Bouclier** : pare un tir.',
   'rules.duel.l3':
@@ -293,6 +314,8 @@ export const fr: Record<string, string> = {
     "Se pose n'importe où. Il ne bouge pas. Rapporte {inc1} $ par round, {inc2} $ avec 2 récolteurs, {inc3} $ avec 3. Très généreux, mais très faible : plus il est près de l'ennemi, plus il est vulnérable.",
   'rules.p.Berolina':
     "Folle amoureuse du roi, elle se sacrifie et lui donne son cœur : **+1 PV**. Utilisable seulement si ton roi a au maximum {maxHp} PV. Elle ne se pose pas.",
+  'rules.p.Wildebeest':
+    "L'attaque ultime, en référence à la Genkidama de Dragon Ball Z : elle nécessite tout ton argent (**1000 $**), comme l'énergie qu'il faut rassembler pour la lancer. Il faut aussi avoir plus de {genkiGap} $ d'avance sur l'adversaire. Elle inflige directement **{genki} PV** à son roi. Elle ne se pose pas et ne s'utilise qu'une seule fois par partie.",
   'rules.p.Duck':
     'La bombe des bombes, à un seul coup : elle supprime toutes les pièces ennemies, mais ton roi perd {tsar} PV. Elle ne se pose pas.',
   'rules.snipes.title': 'Snipes et swaps',
@@ -302,7 +325,7 @@ export const fr: Record<string, string> = {
   'rules.snipes.l4': '**Swaps** : 2 en tout pour tous tes chefs.',
   'rules.special.title': 'Cases spéciales',
   'rules.special.p1':
-    'Si une pièce adverse est sur ta dernière rangée et que tu poses un soldat, un général ou un chef sur sa case, elle est mangée. Le récolteur, lui, ne mange pas en se posant.',
+    'Si une pièce adverse est sur ta dernière rangée et que tu poses un soldat, un général, un chef ou un récolteur sur sa case, elle est mangée.',
   'rules.special.p2':
     'Dynamique des pièces : le soldat mange le chef, le général mange le soldat, le chef mange le général. Les prix et les nombres sont différents, donc c\'est un pierre-feuille-ciseaux inégal.',
 }

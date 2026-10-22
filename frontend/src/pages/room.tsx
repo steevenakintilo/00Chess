@@ -109,6 +109,7 @@ export default function Room() {
         </div>
 
         <p className="m-0 fw-bold">{t('gm.current', { mode: t(`gm.${meta.room.mode}`) })}</p>
+        <p className="m-0 fw-bold">{t('pace.current', { pace: t(`pace.${meta.room.pace ?? 'blitz'}`) })}</p>
         <div className="alert alert-secondary py-2 m-0 w-100 text-center">{t('room.waiting')}</div>
         {offline && <div className="alert alert-warning py-2 m-0 w-100 text-center">{t('online.offline')}</div>}
 

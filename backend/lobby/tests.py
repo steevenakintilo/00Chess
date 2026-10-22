@@ -6,7 +6,7 @@ from rest_framework.test import APIClient, APITestCase
 
 from accounts.models import User
 
-from .models import CODE_ALPHABET, CODE_LENGTH, Room
+from .models import CODE_ALPHABET, CODE_LENGTH, FinishedGame, Room
 
 
 def client_for(user: User) -> APIClient:
@@ -61,7 +61,7 @@ class RoomTests(BaseRoomTest):
         self.assertEqual(self.a.get(f'/api/rooms/{code}/').data['guest']['username'], 'bob')
         events = self.state(self.a, code).data['events']
         self.assertEqual([e['kind'] for e in events], ['start'])
-        self.assertEqual(events[0]['payload'], {'host': 'alice', 'guest': 'bob', 'mode': 'winner'})
+        self.assertEqual(events[0]['payload'], {'host': 'alice', 'guest': 'bob', 'mode': 'winner', 'pace': 'blitz'})
 
     def test_join_errors(self):
         code = self.a.post('/api/rooms/').data['code']
@@ -146,12 +146,16 @@ class GameFlowTests(BaseRoomTest):
 
     def test_game_over_needs_both_players(self):
         code = self.start_game()
-        self.post(self.a, code, 'game-over', {'winner': 'guest'})
+        report = {'winner': 'guest', 'hp_host': 0, 'hp_guest': 5}
+        self.post(self.a, code, 'game-over', report)
         self.assertEqual(self.state(self.a, code).data['room']['phase'], 'duel')
-        self.post(self.b, code, 'game-over', {'winner': 'guest'})
+        self.post(self.b, code, 'game-over', report)
         st = self.state(self.a, code).data
         self.assertEqual(st['room']['phase'], 'over')
-        self.assertEqual(st['events'][-1], {'seq': st['events'][-1]['seq'], 'kind': 'game_over', 'payload': {'winner': 'guest'}})
+        last = st['events'][-1]
+        self.assertEqual(last['kind'], 'game_over')
+        self.assertEqual(last['payload']['winner'], 'guest')
+        self.assertEqual(last['payload']['hp'], {'host': 0, 'guest': 5})
         # plus aucun coup après la fin
         self.assertEqual(self.post(self.a, code, 'move', {'move': 'CHARGER'}).status_code, 409)
 
@@ -160,7 +164,7 @@ class GameFlowTests(BaseRoomTest):
         self.assertEqual(self.b.delete(f'/api/rooms/{code}/').status_code, 204)
         st = self.state(self.a, code).data
         self.assertEqual(st['room']['phase'], 'over')
-        self.assertEqual(st['events'][-1]['payload'], {'side': 'guest'})
+        self.assertEqual(st['events'][-1]['payload']['side'], 'guest')
         # la salle disparaît quand quelqu'un la quitte après la fin
         self.assertEqual(self.a.delete(f'/api/rooms/{code}/').status_code, 204)
         self.assertEqual(self.state(self.a, code).status_code, 404)
@@ -171,7 +175,7 @@ class GameFlowTests(BaseRoomTest):
         self.assertEqual(self.post(self.a, code, 'claim').status_code, 409)
         Room.objects.filter(code=code).update(guest_seen=timezone.now() - timedelta(seconds=60))
         self.assertEqual(self.post(self.a, code, 'claim').status_code, 204)
-        self.assertEqual(self.state(self.a, code).data['events'][-1]['payload'], {'side': 'guest'})
+        self.assertEqual(self.state(self.a, code).data['events'][-1]['payload']['side'], 'guest')
 
     def test_events_are_incremental(self):
         code = self.start_game()
@@ -201,7 +205,7 @@ class TurnsModeTests(BaseRoomTest):
     def test_start_event_carries_the_mode(self):
         code = self.start_turns()
         events = self.state(self.a, code).data['events']
-        self.assertEqual(events[0]['payload'], {'host': 'alice', 'guest': 'bob', 'mode': 'turns'})
+        self.assertEqual(events[0]['payload'], {'host': 'alice', 'guest': 'bob', 'mode': 'turns', 'pace': 'blitz'})
         self.assertEqual(self.state(self.b, code).data['room']['mode'], 'turns')
 
     def test_both_act_each_round_and_first_player_alternates(self):
@@ -235,3 +239,86 @@ class TurnsModeTests(BaseRoomTest):
         self.assertEqual(duel_end['payload']['actors'], ['guest'])
         self.assertEqual(self.post(self.b, code, 'action', {'action': {'kind': 'pass'}}).status_code, 204)
         self.assertEqual(self.state(self.a, code).data['room']['round'], 2)
+
+
+class TrophyAndReplayTests(BaseRoomTest):
+    def finish(self, winner, hp_host, hp_guest):
+        code = self.start_game()
+        report = {'winner': winner, 'hp_host': hp_host, 'hp_guest': hp_guest}
+        self.post(self.a, code, 'game-over', report)
+        self.post(self.b, code, 'game-over', report)
+        return code
+
+    def trophies(self):
+        self.alice.refresh_from_db()
+        self.bob.refresh_from_db()
+        return self.alice.trophies, self.bob.trophies
+
+    def test_trophies_are_the_hp_gap_times_ten(self):
+        self.alice.trophies = self.bob.trophies = 100
+        self.alice.save()
+        self.bob.save()
+        self.finish('host', 5, 0)  # 5-0
+        self.assertEqual(self.trophies(), (150, 50))
+        self.finish('guest', 0, 1)  # 5-4 pour bob
+        self.assertEqual(self.trophies(), (140, 60))
+
+    def test_draw_gives_nothing_and_trophies_never_go_below_zero(self):
+        self.alice.trophies = 7
+        self.alice.save()
+        self.finish('draw', 3, 3)
+        self.assertEqual(self.trophies(), (7, 0))
+        self.finish('guest', 0, 5)
+        self.assertEqual(self.trophies(), (0, 50))
+
+    def test_winner_on_tiebreak_still_gains_the_minimum(self):
+        self.alice.trophies = self.bob.trophies = 50
+        self.alice.save()
+        self.bob.save()
+        self.finish('host', 2, 2)
+        self.assertEqual(self.trophies(), (60, 40))
+
+    def test_forfeit_costs_the_leaver(self):
+        self.alice.trophies = self.bob.trophies = 80
+        self.alice.save()
+        self.bob.save()
+        code = self.start_game()
+        self.post(self.b, code, 'forfeit')
+        self.assertEqual(self.trophies(), (90, 30))
+
+    def test_game_over_needs_valid_hp(self):
+        code = self.start_game()
+        self.assertEqual(self.post(self.a, code, 'game-over', {'winner': 'host'}).status_code, 400)
+        self.assertEqual(self.post(self.a, code, 'game-over', {'winner': 'host', 'hp_host': 9, 'hp_guest': 0}).status_code, 400)
+
+    def test_disagreeing_hp_aborts_without_trophies(self):
+        code = self.start_game()
+        self.post(self.a, code, 'game-over', {'winner': 'host', 'hp_host': 5, 'hp_guest': 0})
+        self.assertEqual(self.post(self.b, code, 'game-over', {'winner': 'host', 'hp_host': 5, 'hp_guest': 4}).data['verdict'], 'mismatch')
+        self.assertEqual(self.trophies(), (0, 0))
+
+    def test_finished_game_can_be_replayed_with_its_code(self):
+        code = self.finish('host', 5, 0)
+        last = self.state(self.a, code).data['events'][-1]['payload']
+        res = self.client.get(f"/api/replays/{last['replay'].lower()}/")  # public, sans connexion
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual((res.data['host'], res.data['guest']), ('alice', 'bob'))
+        self.assertEqual(res.data['events'][0]['kind'], 'start')
+        self.assertEqual(res.data['events'][-1]['kind'], 'game_over')
+        self.assertEqual(res.data['trophies'], {'host': 50, 'guest': 0})
+        # la partie reste revoyable même quand la salle est fermée
+        self.a.delete(f'/api/rooms/{code}/')
+        self.assertEqual(self.client.get(f"/api/replays/{last['replay']}/").status_code, 200)
+        self.assertEqual(self.client.get('/api/replays/ZZZZZZ/').status_code, 404)
+
+    def test_desync_is_not_archived(self):
+        code = self.start_game()
+        self.post(self.a, code, 'game-over', {'winner': 'host', 'hp_host': 5, 'hp_guest': 0})
+        self.post(self.b, code, 'game-over', {'winner': 'guest', 'hp_host': 0, 'hp_guest': 5})
+        self.assertEqual(FinishedGame.objects.count(), 0)
+
+    def test_my_replays_lists_only_my_games(self):
+        self.finish('host', 5, 0)
+        self.assertEqual(len(self.a.get('/api/replays/').data), 1)
+        self.assertEqual(len(self.b.get('/api/replays/').data), 1)
+        self.assertEqual(len(self.c.get('/api/replays/').data), 0)

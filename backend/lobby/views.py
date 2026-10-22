@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import F, Value
+from django.db.models import F, Q, Value
 from django.db.models.functions import Greatest
 from django.utils import timezone
 from rest_framework import status
@@ -11,14 +11,30 @@ from rest_framework.throttling import ScopedRateThrottle
 from accounts.models import User
 from accounts.serializers import UserSerializer
 
-from .models import DISCONNECT_AFTER, GAME_MODES, MOVES_007, PACES, ROOM_LIFETIME, GameEvent, Move007, Room, SiteStats
+from .models import (
+    DISCONNECT_AFTER,
+    GAME_MODES,
+    MOVES_007,
+    PACES,
+    ROOM_LIFETIME,
+    FinishedGame,
+    GameEvent,
+    Move007,
+    Room,
+    SiteStats,
+    generate_replay_code,
+)
 
 ACTION_KINDS = {'pass', 'buy', 'move', 'kamikaze', 'snipe', 'swap'}
 
-# Trophées gagnés ou perdus à la fin d'une partie (jamais en dessous de 0).
-TROPHIES_WIN = 10
-TROPHIES_DRAW = 0
-TROPHIES_LOSS = -5
+KING_HP = 5  # PV de départ d'un roi (KING_HP de engine.ts)
+
+# Trophées : (PV de mon roi − PV du roi adverse) × 10 pour le gagnant, l'inverse pour le perdant ; une égalité vaut 0.
+# Un 5-0 vaut donc 50, un 5-4 vaut 10. Un vainqueur départagé à égalité de PV (richesse) gagne quand même le minimum.
+TROPHIES_PER_HP = 10
+TROPHIES_MIN_WIN = 10
+TROPHIES_FORFEIT_LOSS = 50  # celui qui abandonne (ou se déconnecte) perd toujours ça
+TROPHIES_FORFEIT_WIN = 10
 
 
 class RoomThrottle(ScopedRateThrottle):
@@ -58,33 +74,64 @@ def _add_event(room: Room, kind: str, payload: dict) -> None:
     GameEvent.objects.create(room=room, seq=room.last_seq, kind=kind, payload=payload)
 
 
-def _record_result(room: Room, winner: str | None) -> None:
-    """Met à jour trophées et victoires/égalités/défaites des deux joueurs ; winner = 'host', 'guest' ou None (égalité)."""
-    players = {'host': room.host_id, 'guest': room.guest_id}
-    for side, user_id in players.items():
+def _trophy_deltas(kind: str, payload: dict) -> dict[str, int]:
+    """Variation de trophées de chaque camp, avant le plancher à 0 (voir TROPHIES_*)."""
+    if kind == 'forfeit':  # payload['side'] = celui qui abandonne
+        loser = payload['side']
+        winner = 'guest' if loser == 'host' else 'host'
+        return {winner: TROPHIES_FORFEIT_WIN, loser: -TROPHIES_FORFEIT_LOSS}
+    winner = payload['winner']
+    if winner == 'draw':
+        return {'host': 0, 'guest': 0}
+    loser = 'guest' if winner == 'host' else 'host'
+    gain = max((payload['hp'][winner] - payload['hp'][loser]) * TROPHIES_PER_HP, TROPHIES_MIN_WIN)
+    return {winner: gain, loser: -gain}
+
+
+def _record_result(room: Room, winner: str | None, deltas: dict[str, int]) -> dict[str, int]:
+    """Met à jour trophées et victoires/égalités/défaites ; winner = 'host', 'guest' ou None (égalité).
+
+    Renvoie la variation réellement appliquée (les trophées ne descendent jamais sous 0)."""
+    applied = {}
+    for side, user_id in {'host': room.host_id, 'guest': room.guest_id}.items():
         if user_id is None:
+            applied[side] = 0
             continue
-        if winner is None:
-            counter, delta = 'draws', TROPHIES_DRAW
-        elif winner == side:
-            counter, delta = 'wins', TROPHIES_WIN
-        else:
-            counter, delta = 'losses', TROPHIES_LOSS
+        counter = 'draws' if winner is None else 'wins' if winner == side else 'losses'
+        before = User.objects.get(pk=user_id).trophies
+        applied[side] = max(before + deltas[side], 0) - before
         User.objects.filter(pk=user_id).update(
-            **{counter: F(counter) + 1, 'trophies': Greatest(F('trophies') + Value(delta), Value(0))}
+            **{counter: F(counter) + 1, 'trophies': Greatest(F('trophies') + Value(deltas[side]), Value(0))}
         )
+    return applied
+
+
+def _archive(room: Room, code: str, trophies: dict[str, int]) -> None:
+    """Garde la partie terminée (tous ses événements) pour la revoir avec son code."""
+    FinishedGame.objects.create(
+        code=code,
+        host=room.host,
+        guest=room.guest,
+        host_name=room.host.username,
+        guest_name=room.guest.username,
+        events=[{'seq': e.seq, 'kind': e.kind, 'payload': e.payload} for e in room.events.all()],
+        trophies=trophies,
+    )
 
 
 def _end(room: Room, kind: str, payload: dict) -> None:
+    counted = kind != 'desync'  # victoire, égalité ou abandon comptent ; un désaccord technique non
+    if counted:
+        winner = ('guest' if payload['side'] == 'host' else 'host') if kind == 'forfeit' else payload['winner']
+        trophies = _record_result(room, None if winner == 'draw' else winner, _trophy_deltas(kind, payload))
+        replay_code = generate_replay_code()
+        payload = {**payload, 'trophies': trophies, 'replay': replay_code}
     _add_event(room, kind, payload)
     room.phase = Room.PHASE_OVER
     room.actor = None
-    if kind != 'desync':  # victoire, égalité ou abandon comptent ; un désaccord technique non
+    if counted:
         SiteStats.add_game()
-        if kind == 'forfeit':  # payload['side'] = celui qui abandonne
-            _record_result(room, 'guest' if payload['side'] == 'host' else 'host')
-        else:  # game_over
-            _record_result(room, None if payload['winner'] == 'draw' else payload['winner'])
+        _archive(room, replay_code, trophies)
 
 
 def _locked(user, code):
@@ -339,6 +386,12 @@ def game_over(request, code):
     winner = str(request.data.get('winner', ''))
     if winner not in ('host', 'guest', 'draw'):
         return _err('invalid_report', status.HTTP_400_BAD_REQUEST)
+    try:
+        hp = {'host': int(request.data.get('hp_host')), 'guest': int(request.data.get('hp_guest'))}
+    except (TypeError, ValueError):
+        return _err('invalid_report', status.HTTP_400_BAD_REQUEST)
+    if any(not 0 <= v <= KING_HP for v in hp.values()):
+        return _err('invalid_report', status.HTTP_400_BAD_REQUEST)
     with transaction.atomic():
         room, side = _locked(request.user, code)
         if room is None:
@@ -347,11 +400,11 @@ def game_over(request, code):
             return Response({'verdict': 'done'})
         if room.phase == Room.PHASE_LOBBY:
             return _err('wrong_phase', status.HTTP_409_CONFLICT)
-        verdict = _agree(room, 'over', side, winner)
+        verdict = _agree(room, 'over', side, {'winner': winner, 'hp': hp})
         if verdict == 'mismatch':
             _desync(room)
         elif verdict == 'agreed':
-            _end(room, 'game_over', {'winner': winner})
+            _end(room, 'game_over', {'winner': winner, 'hp': hp})
         room.updated_at = timezone.now()
         room.save()
     return Response({'verdict': verdict})
@@ -390,3 +443,38 @@ def claim_victory(request, code):
         room.updated_at = timezone.now()
         room.save()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ----------------------------------------------------------------------------- replays
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@throttle_classes([RoomThrottle])
+def replay_detail(_request, code):
+    """Une partie terminée, que n'importe qui peut revoir avec son code."""
+    game = FinishedGame.objects.filter(code=code.upper()).first()
+    if game is None:
+        return _err('replay_not_found', status.HTTP_404_NOT_FOUND)
+    return Response(
+        {
+            'code': game.code,
+            'host': game.host_name,
+            'guest': game.guest_name,
+            'trophies': game.trophies,
+            'created_at': game.created_at,
+            'events': game.events,
+        }
+    )
+
+
+@api_view(['GET'])
+def my_replays(request):
+    """Les 20 dernières parties du joueur (pour retrouver un code)."""
+    games = FinishedGame.objects.filter(Q(host=request.user) | Q(guest=request.user))[:20]
+    return Response(
+        [
+            {'code': g.code, 'host': g.host_name, 'guest': g.guest_name, 'trophies': g.trophies, 'created_at': g.created_at}
+            for g in games
+        ]
+    )

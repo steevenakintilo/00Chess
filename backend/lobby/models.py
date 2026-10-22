@@ -29,6 +29,15 @@ def generate_code() -> str:
     raise RuntimeError('Impossible de générer un code de salle unique.')
 
 
+def generate_replay_code() -> str:
+    """Génère un code de replay qui n'existe pas encore (différent du code de salle, qui est réutilisable)."""
+    for _ in range(50):
+        code = ''.join(secrets.choice(CODE_ALPHABET) for _ in range(CODE_LENGTH))
+        if not FinishedGame.objects.filter(code=code).exists():
+            return code
+    raise RuntimeError('Impossible de générer un code de replay unique.')
+
+
 class Room(models.Model):
     """Salle « jouer avec un pote » : l'hôte la crée, son ami la rejoint avec le code.
 
@@ -119,3 +128,22 @@ class SiteStats(models.Model):
     def add_game(cls) -> None:
         cls.objects.get_or_create(pk=1)
         cls.objects.filter(pk=1).update(games_played=models.F('games_played') + 1)  # atomique, sans course entre salles
+
+
+class FinishedGame(models.Model):
+    """Partie en ligne terminée, gardée pour la revoir avec son code. Contient tous les événements publics."""
+
+    code = models.CharField(max_length=CODE_LENGTH, unique=True, default=generate_replay_code, editable=False)
+    host = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name='+')
+    guest = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name='+')
+    host_name = models.CharField(max_length=20)
+    guest_name = models.CharField(max_length=20)
+    events = models.JSONField(default=list)  # [{seq, kind, payload}] dans l'ordre
+    trophies = models.JSONField(default=dict)  # variation de trophées {'host': +30, 'guest': -30}
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self) -> str:
+        return f'{self.code} ({self.host_name} vs {self.guest_name})'

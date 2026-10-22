@@ -11,7 +11,7 @@ class AuthTests(APITestCase):
         res = self.register()
         self.assertEqual(res.status_code, 201)
         self.assertIn('token', res.data)
-        self.assertEqual(res.data['user'], {'id': res.data['user']['id'], 'username': 'alice', 'trophies': 0, 'wins': 0, 'draws': 0})
+        self.assertEqual(res.data['user'], {'id': res.data['user']['id'], 'username': 'alice', 'trophies': 0, 'wins': 0, 'draws': 0, 'losses': 0})
         user = User.objects.get(username='alice')
         self.assertNotEqual(user.password, 'secret1')
         self.assertTrue(user.check_password('secret1'))

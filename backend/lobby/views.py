@@ -35,6 +35,9 @@ TROPHIES_PER_HP = 10
 TROPHIES_MIN_WIN = 10
 TROPHIES_FORFEIT_LOSS = 50  # celui qui abandonne (ou se déconnecte) perd toujours ça
 TROPHIES_FORFEIT_WIN = 10
+# Anti-triche : une partie plus courte que ça (en rounds, un « duel_end » par round) ne change pas les trophées.
+# La partie la plus rapide possible dure ~21 rounds (Genkidama, puis soldat, swap du chef et kamikaze).
+MIN_ROUNDS_FOR_TROPHIES = 20
 
 
 class RoomThrottle(ScopedRateThrottle):
@@ -123,9 +126,11 @@ def _end(room: Room, kind: str, payload: dict) -> None:
     counted = kind != 'desync'  # victoire, égalité ou abandon comptent ; un désaccord technique non
     if counted:
         winner = ('guest' if payload['side'] == 'host' else 'host') if kind == 'forfeit' else payload['winner']
-        trophies = _record_result(room, None if winner == 'draw' else winner, _trophy_deltas(kind, payload))
+        ranked = room.events.filter(kind='duel_end').count() >= MIN_ROUNDS_FOR_TROPHIES
+        deltas = _trophy_deltas(kind, payload) if ranked else {'host': 0, 'guest': 0}
+        trophies = _record_result(room, None if winner == 'draw' else winner, deltas)
         replay_code = generate_replay_code()
-        payload = {**payload, 'trophies': trophies, 'replay': replay_code}
+        payload = {**payload, 'trophies': trophies, 'ranked': ranked, 'replay': replay_code}
     _add_event(room, kind, payload)
     room.phase = Room.PHASE_OVER
     room.actor = None

@@ -6,7 +6,7 @@ from rest_framework.test import APIClient, APITestCase
 
 from accounts.models import User
 
-from .models import CODE_ALPHABET, CODE_LENGTH, FinishedGame, Room
+from .models import CODE_ALPHABET, CODE_LENGTH, FinishedGame, GameEvent, Room
 
 
 def client_for(user: User) -> APIClient:
@@ -242,8 +242,17 @@ class TurnsModeTests(BaseRoomTest):
 
 
 class TrophyAndReplayTests(BaseRoomTest):
-    def finish(self, winner, hp_host, hp_guest):
+    def play_rounds(self, code, n):
+        """Ajoute n rounds déjà joués à la partie (un duel_end chacun, sans passer par les 007)."""
+        room = Room.objects.get(code=code)
+        for i in range(n):
+            room.last_seq += 1
+            GameEvent.objects.create(room=room, seq=room.last_seq, kind='duel_end', payload={'round': i + 1, 'outcome': 'draw', 'actors': []})
+        room.save()
+
+    def finish(self, winner, hp_host, hp_guest, rounds=20):
         code = self.start_game()
+        self.play_rounds(code, rounds)
         report = {'winner': winner, 'hp_host': hp_host, 'hp_guest': hp_guest}
         self.post(self.a, code, 'game-over', report)
         self.post(self.b, code, 'game-over', report)
@@ -283,8 +292,29 @@ class TrophyAndReplayTests(BaseRoomTest):
         self.alice.save()
         self.bob.save()
         code = self.start_game()
+        self.play_rounds(code, 20)
         self.post(self.b, code, 'forfeit')
         self.assertEqual(self.trophies(), (90, 30))
+
+    def test_short_game_gives_no_trophies(self):
+        self.alice.trophies = self.bob.trophies = 80
+        self.alice.save()
+        self.bob.save()
+        code = self.finish('host', 5, 0, rounds=19)
+        self.assertEqual(self.trophies(), (80, 80))
+        last = self.state(self.a, code).data['events'][-1]['payload']
+        self.assertFalse(last['ranked'])
+        self.assertEqual(last['trophies'], {'host': 0, 'guest': 0})
+        self.assertEqual(self.client.get(f"/api/replays/{last['replay']}/").status_code, 200)  # le replay existe quand même
+
+    def test_short_forfeit_gives_no_trophies(self):
+        self.alice.trophies = self.bob.trophies = 80
+        self.alice.save()
+        self.bob.save()
+        code = self.start_game()
+        self.play_rounds(code, 5)
+        self.post(self.b, code, 'forfeit')
+        self.assertEqual(self.trophies(), (80, 80))
 
     def test_game_over_needs_valid_hp(self):
         code = self.start_game()

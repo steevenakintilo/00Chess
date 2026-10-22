@@ -116,8 +116,9 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {'auth': '20/min', 'rooms': '60/min', 'game': '600/min'},
 }
 
-CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS', 'http://localhost:5173')
-CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS', '') + ['https://*.railway.app']
+SITE_ORIGINS = ['https://www.play00chess.com', 'https://play00chess.com']
+CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS', 'http://localhost:5173') + SITE_ORIGINS
+CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS', '') + SITE_ORIGINS + ['https://*.railway.app']
 
 # Derrière le proxy HTTPS de Railway
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

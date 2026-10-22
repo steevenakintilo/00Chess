@@ -20,7 +20,8 @@ export const setToken = (token: string | null) => {
   }
 }
 
-export type ApiUser = { id: number; username: string; trophies: number; wins: number; draws: number }
+export type ApiUser = { id: number; username: string; trophies: number; wins: number; draws: number; losses: number }
+export type SiteStats = { games_played: number; players: number }
 export type RoomPhase = 'lobby' | 'duel' | 'action' | 'over'
 export type ApiRoom = {
   code: string

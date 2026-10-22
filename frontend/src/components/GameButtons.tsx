@@ -140,6 +140,22 @@ export const LearnIcon = (
   </svg>
 )
 
+export const StatsIcon = (
+  <svg {...iconProps}>
+    <path d="M5 20V11" />
+    <path d="M12 20V5" />
+    <path d="M19 20v-6" />
+  </svg>
+)
+
+export const InfoIcon = (
+  <svg {...iconProps}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v5" />
+    <circle cx="12" cy="7.8" r="0.8" fill="#1a1a1a" />
+  </svg>
+)
+
 export const PlayIcon = (
   <svg {...iconProps}>
     <path d="M8 5l11 7-11 7z" />

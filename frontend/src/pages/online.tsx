@@ -144,6 +144,10 @@ function Lobby() {
             <span className="hud__label">{t('online.draws')}</span>
             <span className="hud__value">{user.draws}</span>
           </span>
+          <span className="hud__stat">
+            <span className="hud__label">{t('online.losses')}</span>
+            <span className="hud__value">{user.losses}</span>
+          </span>
         </div>
       </div>
 

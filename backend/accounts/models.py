@@ -37,6 +37,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     trophies = models.PositiveIntegerField(default=0)
     wins = models.PositiveIntegerField(default=0)
     draws = models.PositiveIntegerField(default=0)
+    losses = models.PositiveIntegerField(default=0)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

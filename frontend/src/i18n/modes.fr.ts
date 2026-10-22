@@ -21,5 +21,5 @@ export const frModes: Record<string, string> = {
   'rules.modes.turns':
     "**Tour par tour** : à chaque round, les deux joueurs jouent une action, l'un après l'autre (le premier change à chaque round). Le 007 ne décide plus qui joue, mais il rapporte toujours autant d'argent : un meilleur joueur de 007 gagne plus d'argent et finit statistiquement devant.",
   'rules.modes.classic':
-    "**Classique** : un mode plus proche des échecs. Il n'y a ni duel 007 ni argent : les pièces s'achètent gratuitement (dans la limite de chaque pièce), sans reine ni Tsar Bomba, et, à chaque round, les deux joueurs jouent une action, l'un après l'autre (le premier change à chaque round). Ce mode n'est disponible que contre l'IA.",
+    "**Classique** : un mode plus proche des échecs. Il n'y a ni duel 007 ni argent : les pièces s'achètent gratuitement (dans la limite de chaque pièce), sans reine ni Tsar Bomba, et, à chaque round, les deux joueurs jouent une action, l'un après l'autre, toujours dans le même ordre : le bleu joue en premier, puis le rouge. Ce mode n'est disponible que contre l'IA.",
 }

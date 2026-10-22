@@ -5,6 +5,7 @@ export const frOnline: Record<string, string> = {
   'online.trophies': 'Trophées',
   'online.wins': 'Victoires',
   'online.draws': 'Nuls',
+  'online.losses': 'Défaites',
   'online.playFriend': 'Jouer avec un pote',
   'online.joinTitle': 'Rejoindre un pote',
   'online.codePlaceholder': 'CODE',

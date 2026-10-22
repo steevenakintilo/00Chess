@@ -108,3 +108,14 @@ class Move007(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['room', 'round', 'exchange', 'side'], name='one_move_per_side_and_exchange')
         ]
+
+
+class SiteStats(models.Model):
+    """Compteurs globaux du site (une seule ligne, pk=1)."""
+
+    games_played = models.PositiveIntegerField(default=0)  # parties en ligne terminées (victoire, égalité ou abandon)
+
+    @classmethod
+    def add_game(cls) -> None:
+        cls.objects.get_or_create(pk=1)
+        cls.objects.filter(pk=1).update(games_played=models.F('games_played') + 1)  # atomique, sans course entre salles

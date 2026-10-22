@@ -112,8 +112,9 @@ export default function IAvsIA() {
       <h1 className="h4 m-0">{t('ia.title')}</h1>
 
       <div className="d-flex gap-4 fw-bold">
-        <span style={{ color: '#0d6efd' }}>{t('ia.blue', { level: t(`ai.${levelBlue}`), hp: p1.hp, money: p1.money, wins: p1.duelWins })}</span>
+        {/* le rouge d'abord, puis le bleu : même ordre que sur le plateau (rouge en haut, bleu en bas) */}
         <span style={{ color: '#dc3545' }}>{t('ia.red', { level: t(`ai.${levelRed}`), hp: p2.hp, money: p2.money, wins: p2.duelWins })}</span>
+        <span style={{ color: '#0d6efd' }}>{t('ia.blue', { level: t(`ai.${levelBlue}`), hp: p1.hp, money: p1.money, wins: p1.duelWins })}</span>
         <span className="text-secondary">{t('hud.round', { n: Math.min(game.round, game.maxRounds), max: game.maxRounds })}</span>
       </div>
 
@@ -126,8 +127,8 @@ export default function IAvsIA() {
         {/* Panneau de lecture à droite du plateau */}
         <div className="d-flex flex-column gap-3" style={{ width: 'min(100%, 320px)' }}>
           <ModePicker value={gameMode} onChange={setGameMode} />
-          <LevelPicker label={t('ai.blue')} value={levelBlue} onChange={l => changeLevel('blue', l)} />
           <LevelPicker label={t('ai.red')} value={levelRed} onChange={l => changeLevel('red', l)} />
+          <LevelPicker label={t('ai.blue')} value={levelBlue} onChange={l => changeLevel('blue', l)} />
           <div className="d-flex flex-wrap align-items-center gap-2">
             <button className="btn btn-dark" disabled={!!game.result} onClick={() => setRunning(r => !r)}>
               {running ? t('ia.pause') : t('ia.play')}

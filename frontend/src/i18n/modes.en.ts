@@ -21,5 +21,5 @@ export const enModes: Record<string, string> = {
   'rules.modes.turns':
     '**Turn by turn**: every round, both players play one action, one after the other (the player who goes first changes every round). The 007 no longer decides who plays, but it still earns the same money: a better 007 player earns more money and statistically finishes ahead.',
   'rules.modes.classic':
-    '**Classic**: a mode closer to chess. There is no 007 duel and no money: pieces are bought for free (within each piece\'s limit), with no queen or Tsar Bomba, and, every round, both players play one action, one after the other (the player who goes first changes every round). This mode is only available against the AI.',
+    '**Classic**: a mode closer to chess. There is no 007 duel and no money: pieces are bought for free (within each piece\'s limit), with no queen or Tsar Bomba, and, every round, both players play one action, one after the other, always in the same order: blue plays first, then red. This mode is only available against the AI.',
 }

@@ -1,15 +1,24 @@
 from django.db import transaction
+from django.db.models import F, Value
+from django.db.models.functions import Greatest
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 
+from accounts.models import User
 from accounts.serializers import UserSerializer
 
-from .models import DISCONNECT_AFTER, GAME_MODES, MOVES_007, PACES, ROOM_LIFETIME, GameEvent, Move007, Room
+from .models import DISCONNECT_AFTER, GAME_MODES, MOVES_007, PACES, ROOM_LIFETIME, GameEvent, Move007, Room, SiteStats
 
 ACTION_KINDS = {'pass', 'buy', 'move', 'kamikaze', 'snipe', 'swap'}
+
+# Trophées gagnés ou perdus à la fin d'une partie (jamais en dessous de 0).
+TROPHIES_WIN = 10
+TROPHIES_DRAW = 0
+TROPHIES_LOSS = -5
 
 
 class RoomThrottle(ScopedRateThrottle):
@@ -49,10 +58,33 @@ def _add_event(room: Room, kind: str, payload: dict) -> None:
     GameEvent.objects.create(room=room, seq=room.last_seq, kind=kind, payload=payload)
 
 
+def _record_result(room: Room, winner: str | None) -> None:
+    """Met à jour trophées et victoires/égalités/défaites des deux joueurs ; winner = 'host', 'guest' ou None (égalité)."""
+    players = {'host': room.host_id, 'guest': room.guest_id}
+    for side, user_id in players.items():
+        if user_id is None:
+            continue
+        if winner is None:
+            counter, delta = 'draws', TROPHIES_DRAW
+        elif winner == side:
+            counter, delta = 'wins', TROPHIES_WIN
+        else:
+            counter, delta = 'losses', TROPHIES_LOSS
+        User.objects.filter(pk=user_id).update(
+            **{counter: F(counter) + 1, 'trophies': Greatest(F('trophies') + Value(delta), Value(0))}
+        )
+
+
 def _end(room: Room, kind: str, payload: dict) -> None:
     _add_event(room, kind, payload)
     room.phase = Room.PHASE_OVER
     room.actor = None
+    if kind != 'desync':  # victoire, égalité ou abandon comptent ; un désaccord technique non
+        SiteStats.add_game()
+        if kind == 'forfeit':  # payload['side'] = celui qui abandonne
+            _record_result(room, 'guest' if payload['side'] == 'host' else 'host')
+        else:  # game_over
+            _record_result(room, None if payload['winner'] == 'draw' else payload['winner'])
 
 
 def _locked(user, code):
@@ -65,6 +97,14 @@ def _locked(user, code):
 
 def _not_found() -> Response:
     return _err('room_not_found', status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def site_stats(_request):
+    """Chiffres publics affichés sur l'accueil : parties en ligne jouées et joueurs inscrits."""
+    stats = SiteStats.objects.filter(pk=1).first()
+    return Response({'games_played': stats.games_played if stats else 0, 'players': User.objects.count()})
 
 
 # ----------------------------------------------------------------------------- salles

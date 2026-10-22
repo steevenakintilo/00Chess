@@ -136,7 +136,7 @@ def _end(room: Room, kind: str, payload: dict) -> None:
 
 def _locked(user, code):
     """Salle verrouillée pour modification + camp du joueur ; (None, None) si elle n'existe pas ou n'est pas à lui."""
-    room = Room.objects.select_for_update().select_related('host', 'guest').filter(code=str(code).upper()).first()
+    room = Room.objects.select_for_update(of=('self',)).select_related('host', 'guest').filter(code=str(code).upper()).first()
     if room is None or room.side_of(user) is None:
         return None, None
     return room, room.side_of(user)
@@ -180,7 +180,7 @@ def join_room(request):
     _purge_expired()
     code = str(request.data.get('code', '')).strip().upper()
     with transaction.atomic():
-        room = Room.objects.select_for_update().select_related('host', 'guest').filter(code=code).first()
+        room = Room.objects.select_for_update(of=('self',)).select_related('host', 'guest').filter(code=code).first()
         if room is None:
             return _not_found()
         if room.host_id == request.user.id:

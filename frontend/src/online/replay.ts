@@ -42,7 +42,8 @@ export type OnlineGame = {
   duelSpamDraw: boolean // duel nul parce que les deux joueurs ont spammé le bouclier
   duelVerdict: DuelVerdict | null // issue du duel en cours, dès que le calcul local la connaît
   lastReveal: { host: Move; guest: Move; msgHost: Msg | null; msgGuest: Msg | null } | null
-  mode: GameMode // « winner » : le gagnant du duel joue ; « turns » : les deux jouent à chaque round
+  mode: GameMode // « winner » : le gagnant du duel joue ; « turns » : les deux jouent à chaque round ; « classic » : idem, sans 007
+  first: Side // mode Classique : celui qui joue en premier à chaque round (tiré au sort par le serveur)
   actor: Side | null // qui joue en ce moment sur le plateau
   queue: Side[] // ceux qui joueront ensuite, dans le même round (tour par tour)
   over: null | { kind: 'game_over' | 'forfeit' | 'desync'; winner?: DuelVerdict; side?: Side; trophies?: Trophies; ranked?: boolean; replay?: string }
@@ -58,6 +59,7 @@ export function initialGame(): OnlineGame {
     duelVerdict: null,
     lastReveal: null,
     mode: 'winner',
+    first: 'host',
     actor: null,
     queue: [],
     over: null,
@@ -71,12 +73,17 @@ export function applyEvent(g: OnlineGame, e: NetEvent): OnlineGame {
   const p = e.payload as Record<string, never>
   switch (e.kind) {
     case 'start': {
-      const mode: GameMode = p.mode === 'turns' || p.mode === 'onehp' ? p.mode : 'winner'
+      const mode = (['turns', 'onehp', 'classic'].includes(p.mode) ? p.mode : 'winner') as GameMode
+      const first: Side = p.first === 'guest' ? 'guest' : 'host'
+      const classic = mode === 'classic' // pas de duel : la partie commence directement par les actions
       return {
         ...initialGame(),
         started: true,
         names: { host: String(p.host), guest: String(p.guest) },
         mode,
+        first,
+        actor: classic ? first : null,
+        queue: classic ? [otherSide(first)] : [],
         // « normal » : pas de limite de rounds ; « blitz » (et les anciennes parties) : 50 rounds
         eng: newGameFor(mode, p.pace === 'normal' ? UNLIMITED_ROUNDS : MAX_ROUNDS),
       }
@@ -126,6 +133,7 @@ export function applyEvent(g: OnlineGame, e: NetEvent): OnlineGame {
       if (eng.result) return { ...g, eng, actor: null, queue: [], ...reset }
       if (g.queue.length > 0) return { ...g, eng, actor: g.queue[0], queue: g.queue.slice(1), ...reset } // au suivant, dans le même round
       eng = finishRound(eng)
+      if (g.mode === 'classic' && !eng.result) return { ...g, eng, actor: g.first, queue: [otherSide(g.first)], ...reset }
       return { ...g, eng, actor: null, queue: [], ...reset }
     }
 

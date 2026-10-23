@@ -101,6 +101,7 @@ export default function OnlineGame({ code, events, meta, offline, refresh, onLea
     return () => setNames(null)
   }, [g.started, g.names.host, g.names.guest, setNames])
 
+  const classic = g.mode === 'classic' // ni 007 ni argent
   const winner = winnerOf(g)
   const finished = g.over !== null || game.result !== null
   const inDuel = g.started && !finished && g.actor === null
@@ -272,18 +273,20 @@ export default function OnlineGame({ code, events, meta, offline, refresh, onLea
           <div key={id} className={`hud__row${i === 1 ? ' hud__row--foe' : ''}`}>
             <span className="hud__name">{name}</span>
             <Stat label={t('hud.life')} value={game.players[id].hp} />
-            <Stat label={t('hud.dollars')} value={`${game.players[id].money} $`} />
+            {!classic && <Stat label={t('hud.dollars')} value={`${game.players[id].money} $`} />}
           </div>
         ))}
         <div className="hud__foot">
-          <span>
-            {t('hud.duelsNamed', {
-              x: myName,
-              a: me.duelWins,
-              y: foeName,
-              b: foe.duelWins,
-            })}
-          </span>
+          {!classic && (
+            <span>
+              {t('hud.duelsNamed', {
+                x: myName,
+                a: me.duelWins,
+                y: foeName,
+                b: foe.duelWins,
+              })}
+            </span>
+          )}
           <span>{t('hud.round', { n: Math.min(game.round, game.maxRounds), max: game.maxRounds >= UNLIMITED_ROUNDS ? '∞' : game.maxRounds })}</span>
           <span>{t('gm.current', { mode: t(`gm.${g.mode}`) })}</span>
         </div>
@@ -308,7 +311,7 @@ export default function OnlineGame({ code, events, meta, offline, refresh, onLea
               {g.over?.trophies && (
                 <p className="fw-bold">
                   {g.over.ranked === false
-                    ? g.mode === 'onehp'
+                    ? g.mode === 'onehp' || classic
                       ? t('online.noTrophiesMode')
                       : t('online.tooShort', { n: MIN_ROUNDS_FOR_TROPHIES })
                     : t('online.trophiesDelta', { n: `${g.over.trophies[side] > 0 ? '+' : ''}${g.over.trophies[side]}` })}
@@ -475,13 +478,15 @@ export default function OnlineGame({ code, events, meta, offline, refresh, onLea
         <Modal onClose={() => setShopOpen(false)}>
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h2 className="h4 m-0">{t('shop.title')}</h2>
-            <span className="d-flex align-items-center gap-1 fw-bold fs-4">
-              <span className="small text-secondary">{t('hud.dollars')}</span>
-              {me.money} $
-            </span>
+            {!classic && (
+              <span className="d-flex align-items-center gap-1 fw-bold fs-4">
+                <span className="small text-secondary">{t('hud.dollars')}</span>
+                {me.money} $
+              </span>
+            )}
           </div>
           <div className="row row-cols-2 row-cols-md-3 g-3">
-            {shopItems.filter(item => !game.banned?.includes(item.key as ShopKey)).map(item => {
+            {shopItems.filter(item => !game.banned?.includes(item.key as ShopKey) && (!classic || (item.key !== 'Berolina' && item.key !== 'Duck' && item.key !== 'Wildebeest'))).map(item => {
               const key = item.key as ShopKey
               const ok = canBuy(game, meId, key)
               return (
@@ -496,7 +501,7 @@ export default function OnlineGame({ code, events, meta, offline, refresh, onLea
                   <div className="small text-secondary">
                     {me.bought[key]}/{maxOf(key)}
                   </div>
-                  <BuyButton price={item.price} active={shopItem === key} disabled={!ok} onClick={() => buy(key)} />
+                  <BuyButton price={classic ? undefined : item.price} active={shopItem === key} disabled={!ok} onClick={() => buy(key)} />
                   {!ok && <div className="small text-danger mt-1">{t(buyBlockReason(game, meId, key) ?? '')}</div>}
                 </div>
               )

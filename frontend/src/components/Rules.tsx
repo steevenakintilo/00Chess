@@ -13,12 +13,15 @@ const BookIcon = (
   </svg>
 )
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+// Section repliable (accordéon) : seul le titre est visible tant qu'elle est fermée.
+function Section({ title, children, open }: { title: string; children: ReactNode; open?: boolean }) {
   return (
-    <section className="mb-4">
-      <h3 className="h5 border-bottom border-2 border-dark pb-1">{title}</h3>
-      {children}
-    </section>
+    <details className="mb-2 border border-2 border-dark rounded-3 px-3 py-2" open={open}>
+      <summary className="h5 m-0 fw-bold" style={{ cursor: 'pointer' }}>
+        {title}
+      </summary>
+      <div className="pt-2">{children}</div>
+    </details>
   )
 }
 
@@ -54,7 +57,7 @@ function RulesContent() {
     <div className="text-start" style={{ fontSize: '0.95rem' }}>
       <p>{t('rules.intro')}</p>
 
-      <Section title={t('rules.goal.title')}>
+      <Section title={t('rules.goal.title')} open>
         {p('rules.goal.p1')}
         {p('rules.goal.p2')}
       </Section>

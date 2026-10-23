@@ -11,7 +11,7 @@ export const frModes: Record<string, string> = {
     "Les rois n'ont qu'un seul PV : le premier qui touche le roi adverse gagne. Le gagnant du 007 joue, sans reine ni Genkidama. Pas de trophées en ligne.",
   'gm.classic': 'Classique',
   'gm.classic.desc':
-    "Plus proche des échecs : pas de 007, pas d'argent. Les achats sont gratuits (les limites par pièce restent), sans reine ni Tsar Bomba, et les deux joueurs jouent une action à chaque round. Disponible uniquement contre l'IA.",
+    "Plus proche des échecs : pas de 007, pas d'argent. Les achats sont gratuits (les limites par pièce restent), sans reine ni Tsar Bomba, et les deux joueurs jouent une action à chaque round.",
   'gm.current': 'Mode : {mode}',
   'pace.title': 'Durée de la partie',
   'pace.blitz': 'Blitz',
@@ -26,5 +26,5 @@ export const frModes: Record<string, string> = {
   'rules.modes.onehp':
     "**Roi 1 PV** : comme « Le gagnant joue », mais chaque roi n'a qu'un seul PV : le premier coup qui touche le roi adverse gagne la partie. La reine et la Genkidama ne sont pas disponibles. Cette variante ne rapporte pas de trophées en ligne.",
   'rules.modes.classic':
-    "**Classique** : un mode plus proche des échecs. Il n'y a ni duel 007 ni argent : les pièces s'achètent gratuitement (dans la limite de chaque pièce), sans reine ni Tsar Bomba, et, à chaque round, les deux joueurs jouent une action, l'un après l'autre, toujours dans le même ordre : le bleu joue en premier, puis le rouge. Ce mode n'est disponible que contre l'IA.",
+    "**Classique** : un mode plus proche des échecs. Il n'y a ni duel 007 ni argent : les pièces s'achètent gratuitement (dans la limite de chaque pièce), sans reine ni Tsar Bomba, et, à chaque round, les deux joueurs jouent une action, l'un après l'autre, toujours dans le même ordre. En ligne, un tirage au sort au début de la partie décide qui joue en premier (pas d'avantage), et ce mode ne rapporte pas de trophées. Contre l'IA, le bleu joue en premier.",
 }

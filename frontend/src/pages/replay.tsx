@@ -124,10 +124,12 @@ export default function Replay() {
               <span className="hud__label">{t('hud.life')}</span>
               <span className="hud__value">{game.players[id].hp}</span>
             </span>
-            <span className="hud__stat">
-              <span className="hud__label">{t('hud.dollars')}</span>
-              <span className="hud__value">{game.players[id].money} $</span>
-            </span>
+            {g.mode !== 'classic' && (
+              <span className="hud__stat">
+                <span className="hud__label">{t('hud.dollars')}</span>
+                <span className="hud__value">{game.players[id].money} $</span>
+              </span>
+            )}
           </div>
         ))}
         <div className="hud__foot">

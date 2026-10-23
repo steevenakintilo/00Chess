@@ -1,3 +1,5 @@
+import random
+
 from django.db import transaction
 from django.db.models import F, Q, Value
 from django.db.models.functions import Greatest
@@ -38,7 +40,7 @@ TROPHIES_FORFEIT_WIN = 10
 # Anti-triche : une partie plus courte que ça (en rounds, un « duel_end » par round) ne change pas les trophées.
 # La partie la plus rapide possible dure ~21 rounds (Genkidama, puis soldat, swap du chef et kamikaze).
 MIN_ROUNDS_FOR_TROPHIES = 20
-UNRANKED_MODES = ('onehp',)  # variantes qui ne rapportent aucun trophée
+UNRANKED_MODES = ('onehp', 'classic')  # variantes qui ne rapportent aucun trophée
 
 
 class RoomThrottle(ScopedRateThrottle):
@@ -140,6 +142,12 @@ def _end(room: Room, kind: str, payload: dict) -> None:
         _archive(room, replay_code, trophies)
 
 
+def _classic_first(room: Room) -> str:
+    """Mode Classique : celui qui joue en premier à chaque round (tiré au sort au démarrage, voir l'événement « start »)."""
+    start = room.events.filter(kind='start').first()
+    return start.payload['first'] if start else 'host'
+
+
 def _locked(user, code):
     """Salle verrouillée pour modification + camp du joueur ; (None, None) si elle n'existe pas ou n'est pas à lui."""
     room = Room.objects.select_for_update(of=('self',)).select_related('host', 'guest').filter(code=str(code).upper()).first()
@@ -196,11 +204,20 @@ def join_room(request):
         if room.is_full:
             return _err('room_full', status.HTTP_409_CONFLICT)
         room.guest = request.user
-        room.phase = Room.PHASE_DUEL
         room.round = 1
         room.exchange = 1
         room.updated_at = timezone.now()
-        _add_event(room, 'start', {'host': room.host.username, 'guest': request.user.username, 'mode': room.mode, 'pace': room.pace})
+        start = {'host': room.host.username, 'guest': request.user.username, 'mode': room.mode, 'pace': room.pace}
+        if room.mode == 'classic':
+            # Pas de 007 : un tirage au sort décide qui joue en premier (le bleu, l'hôte, ou le rouge, l'invité).
+            first = random.choice(('host', 'guest'))
+            start['first'] = first
+            room.phase = Room.PHASE_ACTION
+            room.actor = first
+            room.pending = ['guest' if first == 'host' else 'host']
+        else:
+            room.phase = Room.PHASE_DUEL
+        _add_event(room, 'start', start)
         room.save()
     return Response(_room_data(room))
 
@@ -375,11 +392,17 @@ def send_action(request, code):
             room.updated_at = timezone.now()
             room.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        room.phase = Room.PHASE_DUEL
-        room.actor = None
         room.round += 1
         room.exchange = 1
         room.reports = {}
+        if room.mode == 'classic':  # pas de duel : le round suivant commence directement par les actions
+            first = _classic_first(room)
+            room.phase = Room.PHASE_ACTION
+            room.actor = first
+            room.pending = ['guest' if first == 'host' else 'host']
+        else:
+            room.phase = Room.PHASE_DUEL
+            room.actor = None
         room.updated_at = timezone.now()
         room.save()
     return Response(status=status.HTTP_204_NO_CONTENT)

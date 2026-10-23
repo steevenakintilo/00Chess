@@ -324,6 +324,20 @@ class TrophyAndReplayTests(BaseRoomTest):
         self.alice.refresh_from_db()
         self.assertEqual(self.alice.wins, 1)  # la victoire est comptée, seulement pas les trophées
 
+    def test_classic_mode_skips_the_duel_and_picks_a_random_first_player(self):
+        code = self.a.post('/api/rooms/', {'mode': 'classic'}, format='json').data['code']
+        self.b.post('/api/rooms/join/', {'code': code}, format='json')
+        data = self.state(self.a, code).data
+        first = data['events'][0]['payload']['first']
+        self.assertIn(first, ('host', 'guest'))
+        self.assertEqual((data['room']['phase'], data['room']['actor']), ('action', first))
+        other = 'guest' if first == 'host' else 'host'
+        clients = {'host': self.a, 'guest': self.b}
+        self.post(clients[first], code, 'action', {'action': {'kind': 'pass'}})
+        self.post(clients[other], code, 'action', {'action': {'kind': 'pass'}})
+        room = self.state(self.a, code).data['room']
+        self.assertEqual((room['phase'], room['round'], room['actor']), ('action', 2, first))  # même ordre au round suivant
+
     def test_short_forfeit_gives_no_trophies(self):
         self.alice.trophies = self.bob.trophies = 80
         self.alice.save()

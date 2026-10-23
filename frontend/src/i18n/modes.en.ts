@@ -11,7 +11,7 @@ export const enModes: Record<string, string> = {
     'Kings only have a single HP: the first player to hit the enemy king wins. The 007 winner plays, with no queen and no Genkidama. No trophies online.',
   'gm.classic': 'Classic',
   'gm.classic.desc':
-    'Closer to chess: no 007, no money. Purchases are free (the per-piece limits still apply), with no queen or Tsar Bomba, and both players play one action every round. Only available against the AI.',
+    'Closer to chess: no 007, no money. Purchases are free (the per-piece limits still apply), with no queen or Tsar Bomba, and both players play one action every round.',
   'gm.current': 'Mode: {mode}',
   'pace.title': 'Game length',
   'pace.blitz': 'Blitz',
@@ -26,5 +26,5 @@ export const enModes: Record<string, string> = {
   'rules.modes.onehp':
     '**1 HP king**: like "Winner plays", but each king has a single HP: the first hit on the enemy king wins the game. The queen and the Genkidama are not available. This variant gives no trophies online.',
   'rules.modes.classic':
-    '**Classic**: a mode closer to chess. There is no 007 duel and no money: pieces are bought for free (within each piece\'s limit), with no queen or Tsar Bomba, and, every round, both players play one action, one after the other, always in the same order: blue plays first, then red. This mode is only available against the AI.',
+    '**Classic**: a mode closer to chess. There is no 007 duel and no money: pieces are bought for free (within each piece\'s limit), with no queen or Tsar Bomba, and, every round, both players play one action, one after the other, always in the same order. Online, a coin flip at the start decides who plays first (no advantage), and this mode gives no trophies. Against the AI, blue plays first.',
 }

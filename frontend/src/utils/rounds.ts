@@ -10,7 +10,8 @@ import { newGameState, other, type GameState, type PlayerId } from './engine'
 
 export type GameMode = 'winner' | 'turns' | 'onehp' | 'classic'
 export const GAME_MODES: GameMode[] = ['winner', 'turns', 'onehp', 'classic']
-export const DUEL_MODES: GameMode[] = ['winner', 'turns', 'onehp'] // modes avec 007 (seuls ceux-là existent en ligne)
+export const DUEL_MODES: GameMode[] = ['winner', 'turns', 'onehp'] // modes avec 007
+export const ONLINE_MODES: GameMode[] = GAME_MODES // tous les modes se jouent en ligne
 export const BASE_MODES: GameMode[] = ['winner', 'turns'] // modes de l'écran IA contre IA (règles de plateau normales)
 export const DEFAULT_GAME_MODE: GameMode = 'winner'
 export const hasDuel = (mode: GameMode) => mode !== 'classic'

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { GameButton } from './GameButtons'
 import { useI18n } from '../i18n'
-import { DEFAULT_GAME_MODE, DUEL_MODES, type GameMode } from '../utils/rounds'
+import { DEFAULT_GAME_MODE, ONLINE_MODES, type GameMode } from '../utils/rounds'
 
 // Mode de jeu mémorisé dans le navigateur. `modes` : les modes que la page sait jouer (un mode mémorisé ailleurs est ignoré).
-export function useStoredGameMode(storageKey = 'gameMode', modes: GameMode[] = DUEL_MODES): [GameMode, (m: GameMode) => void] {
+export function useStoredGameMode(storageKey = 'gameMode', modes: GameMode[] = ONLINE_MODES): [GameMode, (m: GameMode) => void] {
   const [mode, setMode] = useState<GameMode>(() => {
     try {
       const saved = localStorage.getItem(storageKey)
@@ -30,7 +30,7 @@ export default function ModePicker({
   value,
   onChange,
   disabled,
-  modes = DUEL_MODES,
+  modes = ONLINE_MODES,
   disabledModes = [],
 }: {
   value: GameMode

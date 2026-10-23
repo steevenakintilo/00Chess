@@ -33,6 +33,7 @@ export const sideOf = (p: PlayerId): Side => (p === 'p1' ? 'host' : 'guest')
 export const otherSide = (s: Side): Side => (s === 'host' ? 'guest' : 'host')
 
 export type DuelVerdict = Side | 'draw'
+export type Trophies = Record<Side, number> // variation de trophées de chaque camp en fin de partie
 
 export type OnlineGame = {
   started: boolean
@@ -45,7 +46,7 @@ export type OnlineGame = {
   mode: GameMode // « winner » : le gagnant du duel joue ; « turns » : les deux jouent à chaque round
   actor: Side | null // qui joue en ce moment sur le plateau
   queue: Side[] // ceux qui joueront ensuite, dans le même round (tour par tour)
-  over: null | { kind: 'game_over' | 'forfeit' | 'desync'; winner?: DuelVerdict; side?: Side }
+  over: null | { kind: 'game_over' | 'forfeit' | 'desync'; winner?: DuelVerdict; side?: Side; trophies?: Trophies; ranked?: boolean; replay?: string }
 }
 
 export function initialGame(): OnlineGame {
@@ -128,9 +129,9 @@ export function applyEvent(g: OnlineGame, e: NetEvent): OnlineGame {
     }
 
     case 'game_over':
-      return { ...g, over: { kind: 'game_over', winner: p.winner as unknown as DuelVerdict } }
+      return { ...g, over: { kind: 'game_over', winner: p.winner as unknown as DuelVerdict, trophies: p.trophies as unknown as Trophies, ranked: p.ranked as unknown as boolean, replay: p.replay as unknown as string } }
     case 'forfeit':
-      return { ...g, over: { kind: 'forfeit', side: p.side as unknown as Side } }
+      return { ...g, over: { kind: 'forfeit', side: p.side as unknown as Side, trophies: p.trophies as unknown as Trophies, ranked: p.ranked as unknown as boolean, replay: p.replay as unknown as string } }
     case 'desync':
       return { ...g, over: { kind: 'desync' } }
     default:

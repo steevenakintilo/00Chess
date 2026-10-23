@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ApiError, api, type ApiRoomState } from '../api'
+import { useAuth } from '../auth/AuthContext'
 import Board from './Board'
 import { CapturedPieces, ScoreTable } from './GameSummary'
 import Modal from './Modal'
@@ -19,6 +21,7 @@ import {
   other,
   placementCells,
   UNLIMITED_ROUNDS,
+  KING_HP,
   posKey,
   snipeLocked,
   snipeTargets,
@@ -32,6 +35,8 @@ import { SHIELD_LIMIT, WIN_REWARDS, PTS, mirror, playerMoves, rewardFor, type Mo
 import type { Msg } from '../utils/msg'
 import { playerOf, replay, winnerOf, type NetEvent } from '../online/replay'
 import { useGameSounds } from '../utils/useGameSounds'
+
+const MIN_ROUNDS_FOR_TROPHIES = 20 // comme MIN_ROUNDS_FOR_TROPHIES du backend (lobby/views.py)
 
 type Mode = 'move' | 'snipe' | 'swap'
 type Highlight = { kind: 'place' | 'move' | 'capture' | 'snipe' | 'swap'; action: Action }
@@ -72,6 +77,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 
 export default function OnlineGame({ code, events, meta, offline, refresh, onLeave }: Props) {
   const { t, msg, setNames } = useI18n()
+  const { refresh: refreshUser } = useAuth()
   const side = meta.side
   const meId = playerOf(side)
   const foeId = other(meId)
@@ -117,10 +123,17 @@ export default function OnlineGame({ code, events, meta, offline, refresh, onLea
     if (game.result && !g.over && !reported.current.has('over')) {
       reported.current.add('over')
       const w = game.result.winner === 'draw' ? 'draw' : game.result.winner === 'p1' ? 'host' : 'guest'
-      send('game-over', { winner: w })
+      const hp = (p: 'p1' | 'p2') => Math.min(Math.max(game.players[p].hp, 0), KING_HP)
+      send('game-over', { winner: w, hp_host: hp('p1'), hp_guest: hp('p2') })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game.result, g.over])
+
+  // Les trophées viennent d'être mis à jour par le serveur : on recharge le profil.
+  const gameEnded = g.over?.trophies !== undefined
+  useEffect(() => {
+    if (gameEnded) refreshUser()
+  }, [gameEnded, refreshUser])
 
   // Quand c'est à moi de jouer, le shop s'ouvre tout seul.
   const wasMyTurn = useRef(false)
@@ -292,7 +305,22 @@ export default function OnlineGame({ code, events, meta, offline, refresh, onLea
             <div className="text-center">
               <h4>{resultTitle}</h4>
               {overNote && <p>{overNote}</p>}
+              {g.over?.trophies && (
+                <p className="fw-bold">
+                  {g.over.ranked === false
+                    ? t('online.tooShort', { n: MIN_ROUNDS_FOR_TROPHIES })
+                    : t('online.trophiesDelta', { n: `${g.over.trophies[side] > 0 ? '+' : ''}${g.over.trophies[side]}` })}
+                </p>
+              )}
               {game.result && <ScoreTable game={game} names={[g.names.host, g.names.guest]} />}
+              {g.over?.replay && (
+                <div className="mb-2">
+                  <p className="small text-secondary mb-1">{t('online.replayCode', { code: g.over.replay })}</p>
+                  <Link to={`/replay/${g.over.replay}`} className="btn-game btn-game--sm text-decoration-none">
+                    {t('replay.watch')}
+                  </Link>
+                </div>
+              )}
               <ContinueButton label={t('online.leave')} onClick={onLeave} />
             </div>
           )}

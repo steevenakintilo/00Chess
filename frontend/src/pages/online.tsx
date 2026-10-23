@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ApiError, api, type ApiRoom } from '../api'
+import { ApiError, api, type ApiReplayItem, type ApiRoom } from '../api'
 import { useAuth } from '../auth/AuthContext'
 import RulesButton from '../components/Rules'
 import { ContinueButton, GameButton } from '../components/GameButtons'
@@ -97,8 +97,19 @@ function Lobby() {
   const [pace, setPace] = useStoredPace()
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [replayCode, setReplayCode] = useState('')
+  const [recent, setRecent] = useState<ApiReplayItem[]>([])
+
+  useEffect(() => {
+    api<ApiReplayItem[]>('/api/replays/').then(setRecent, () => setRecent([]))
+  }, [])
 
   if (!user) return null
+
+  function openReplay(e: FormEvent) {
+    e.preventDefault()
+    navigate(`/replay/${replayCode.trim().toUpperCase()}`)
+  }
 
   async function createRoom() {
     setError('')
@@ -130,8 +141,8 @@ function Lobby() {
   return (
     <div className="d-flex flex-column align-items-center gap-4 w-100" style={{ maxWidth: 420 }}>
       <div className="hud" style={{ position: 'static', width: '100%' }}>
+        <div className="hud__name text-center mb-2">{user.username}</div>
         <div className="hud__row">
-          <span className="hud__name">{user.username}</span>
           <span className="hud__stat">
             <span className="hud__label">{t('online.trophies')}</span>
             <span className="hud__value">{user.trophies}</span>
@@ -178,6 +189,44 @@ function Lobby() {
       </form>
 
       {error && <div className="alert alert-danger py-2 m-0 w-100">{error}</div>}
+
+      <form onSubmit={openReplay} className="d-flex flex-column gap-2 w-100 align-items-center">
+        <p className="m-0 fw-bold">{t('replay.joinTitle')}</p>
+        <div className="d-flex gap-2">
+          <input
+            className="form-control text-center text-uppercase fw-bold"
+            style={{ width: 150, letterSpacing: '0.2em' }}
+            placeholder={t('online.codePlaceholder')}
+            maxLength={6}
+            value={replayCode}
+            onChange={e => setReplayCode(e.target.value)}
+            required
+          />
+          <button className="btn-game" type="submit" disabled={replayCode.trim().length < 6}>
+            {t('replay.view')}
+          </button>
+        </div>
+      </form>
+
+      {recent.length > 0 && (
+        <div className="w-100">
+          <p className="m-0 mb-2 fw-bold text-center">{t('replay.recent')}</p>
+          <div className="d-flex flex-column gap-1">
+            {recent.map(r => {
+              const mine = r.host === user.username ? r.trophies.host : r.trophies.guest
+              return (
+                <Link key={r.code} to={`/replay/${r.code}`} className="d-flex justify-content-between text-decoration-none small">
+                  <span>{t('online.vs', { a: r.host, b: r.guest })}</span>
+                  <span className="text-secondary">
+                    {mine > 0 ? '+' : ''}
+                    {mine} · {r.code}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <GameButton onClick={logout}>{t('auth.logout')}</GameButton>
     </div>

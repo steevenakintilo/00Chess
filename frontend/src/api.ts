@@ -45,6 +45,17 @@ export type ApiRoomState = {
   opponent_seen_ago: number | null
 }
 
+// Partie terminée, revoyable avec son code (/api/replays/<code>/).
+export type ApiReplay = {
+  code: string
+  host: string
+  guest: string
+  trophies: { host: number; guest: number }
+  created_at: string
+  events: { seq: number; kind: string; payload: Record<string, unknown> }[]
+}
+export type ApiReplayItem = Omit<ApiReplay, 'events'>
+
 // status 0 = serveur injoignable. data = corps JSON de l'erreur (codes stables, ex. { username: ['taken'] }).
 export class ApiError extends Error {
   status: number

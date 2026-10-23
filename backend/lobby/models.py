@@ -13,7 +13,7 @@ ROOM_LIFETIME = timedelta(hours=1)
 # Un joueur sans nouvelles depuis ce temps est considéré comme déconnecté (l'autre peut réclamer la victoire).
 DISCONNECT_AFTER = timedelta(seconds=30)
 
-GAME_MODES = ('winner', 'turns')  # winner : le gagnant du duel joue ; turns : tour par tour (les deux jouent chaque round)
+GAME_MODES = ('winner', 'turns', 'onehp')  # winner : le gagnant du duel joue ; turns : tour par tour ; onehp : comme winner, rois à 1 PV
 
 PACES = ('blitz', 'normal')  # blitz : partie limitée à 50 rounds ; normal : pas de limite, le premier qui gagne gagne
 

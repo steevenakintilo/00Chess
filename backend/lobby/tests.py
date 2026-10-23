@@ -307,6 +307,23 @@ class TrophyAndReplayTests(BaseRoomTest):
         self.assertEqual(last['trophies'], {'host': 0, 'guest': 0})
         self.assertEqual(self.client.get(f"/api/replays/{last['replay']}/").status_code, 200)  # le replay existe quand même
 
+    def test_one_hp_mode_gives_no_trophies_even_in_a_long_game(self):
+        self.alice.trophies = self.bob.trophies = 80
+        self.alice.save()
+        self.bob.save()
+        code = self.a.post('/api/rooms/', {'mode': 'onehp'}, format='json').data['code']
+        self.b.post('/api/rooms/join/', {'code': code}, format='json')
+        self.play_rounds(code, 25)
+        report = {'winner': 'host', 'hp_host': 1, 'hp_guest': 0}
+        self.post(self.a, code, 'game-over', report)
+        self.post(self.b, code, 'game-over', report)
+        self.assertEqual(self.trophies(), (80, 80))
+        last = self.state(self.a, code).data['events'][-1]['payload']
+        self.assertFalse(last['ranked'])
+        self.assertEqual(self.state(self.a, code).data['events'][0]['payload']['mode'], 'onehp')
+        self.alice.refresh_from_db()
+        self.assertEqual(self.alice.wins, 1)  # la victoire est comptée, seulement pas les trophées
+
     def test_short_forfeit_gives_no_trophies(self):
         self.alice.trophies = self.bob.trophies = 80
         self.alice.save()

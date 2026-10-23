@@ -63,6 +63,7 @@ export const frOnline: Record<string, string> = {
   'online.claim': 'Réclamer la victoire',
   'online.leave': 'Retour au salon',
   'online.offline': 'Connexion au serveur perdue, nouvelle tentative…',
+  'online.noTrophiesMode': 'Ce mode ne rapporte pas de trophées.',
   'online.tooShort': 'Partie trop courte (moins de {n} rounds) : pas de trophées.',
   'online.trophiesDelta': 'Trophées : {n}',
   'online.replayCode': 'Code du replay : {code}',

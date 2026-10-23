@@ -63,6 +63,7 @@ export const enOnline: Record<string, string> = {
   'online.claim': 'Claim victory',
   'online.leave': 'Back to the lobby',
   'online.offline': 'Lost connection to the server, retrying…',
+  'online.noTrophiesMode': 'This mode gives no trophies.',
   'online.tooShort': 'Game too short (under {n} rounds): no trophies.',
   'online.trophiesDelta': 'Trophies: {n}',
   'online.replayCode': 'Replay code: {code}',

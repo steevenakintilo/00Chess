@@ -308,7 +308,9 @@ export default function OnlineGame({ code, events, meta, offline, refresh, onLea
               {g.over?.trophies && (
                 <p className="fw-bold">
                   {g.over.ranked === false
-                    ? t('online.tooShort', { n: MIN_ROUNDS_FOR_TROPHIES })
+                    ? g.mode === 'onehp'
+                      ? t('online.noTrophiesMode')
+                      : t('online.tooShort', { n: MIN_ROUNDS_FOR_TROPHIES })
                     : t('online.trophiesDelta', { n: `${g.over.trophies[side] > 0 ? '+' : ''}${g.over.trophies[side]}` })}
                 </p>
               )}
@@ -479,7 +481,7 @@ export default function OnlineGame({ code, events, meta, offline, refresh, onLea
             </span>
           </div>
           <div className="row row-cols-2 row-cols-md-3 g-3">
-            {shopItems.map(item => {
+            {shopItems.filter(item => !game.banned?.includes(item.key as ShopKey)).map(item => {
               const key = item.key as ShopKey
               const ok = canBuy(game, meId, key)
               return (

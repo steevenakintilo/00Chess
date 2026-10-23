@@ -38,6 +38,7 @@ TROPHIES_FORFEIT_WIN = 10
 # Anti-triche : une partie plus courte que ça (en rounds, un « duel_end » par round) ne change pas les trophées.
 # La partie la plus rapide possible dure ~21 rounds (Genkidama, puis soldat, swap du chef et kamikaze).
 MIN_ROUNDS_FOR_TROPHIES = 20
+UNRANKED_MODES = ('onehp',)  # variantes qui ne rapportent aucun trophée
 
 
 class RoomThrottle(ScopedRateThrottle):
@@ -126,7 +127,7 @@ def _end(room: Room, kind: str, payload: dict) -> None:
     counted = kind != 'desync'  # victoire, égalité ou abandon comptent ; un désaccord technique non
     if counted:
         winner = ('guest' if payload['side'] == 'host' else 'host') if kind == 'forfeit' else payload['winner']
-        ranked = room.events.filter(kind='duel_end').count() >= MIN_ROUNDS_FOR_TROPHIES
+        ranked = room.mode not in UNRANKED_MODES and room.events.filter(kind='duel_end').count() >= MIN_ROUNDS_FOR_TROPHIES
         deltas = _trophy_deltas(kind, payload) if ranked else {'host': 0, 'guest': 0}
         trophies = _record_result(room, None if winner == 'draw' else winner, deltas)
         replay_code = generate_replay_code()

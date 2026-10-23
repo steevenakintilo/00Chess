@@ -32,7 +32,7 @@ export type ApiRoom = {
   round: number
   exchange: number
   actor: 'host' | 'guest' | null
-  mode: 'winner' | 'turns'
+  mode: 'winner' | 'turns' | 'onehp'
   pace: 'blitz' | 'normal' // blitz : 50 rounds max ; normal : pas de limite
 }
 // Réponse de /api/rooms/<code>/state/ : l'état de la salle + les nouveaux événements publics de la partie.

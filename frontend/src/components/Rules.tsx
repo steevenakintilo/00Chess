@@ -68,6 +68,7 @@ function RulesContent() {
         <ul>
           <li>{tr('rules.modes.winner', P)}</li>
           <li>{tr('rules.modes.turns', P)}</li>
+          <li>{tr('rules.modes.onehp', P)}</li>
           <li>{tr('rules.modes.classic', P)}</li>
         </ul>
       </Section>

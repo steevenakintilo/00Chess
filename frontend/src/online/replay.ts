@@ -7,7 +7,6 @@ import {
   finishRound,
   MAX_ROUNDS,
   UNLIMITED_ROUNDS,
-  newGameState,
   type Action,
   type GameState,
   type PlayerId,
@@ -23,7 +22,7 @@ import {
   type State as DuelState,
 } from '../utils/game007'
 import type { Msg } from '../utils/msg'
-import type { GameMode } from '../utils/rounds'
+import { newGameFor, type GameMode } from '../utils/rounds'
 
 export type Side = 'host' | 'guest'
 export type NetEvent = { seq: number; kind: string; payload: Record<string, unknown> }
@@ -53,7 +52,7 @@ export function initialGame(): OnlineGame {
   return {
     started: false,
     names: { host: '', guest: '' },
-    eng: newGameState(),
+    eng: newGameFor('winner'),
     duel: newGame(),
     duelSpamDraw: false,
     duelVerdict: null,
@@ -71,15 +70,17 @@ const outcomeOf = (v: DuelVerdict): Outcome => (v === 'host' ? 'p1' : v === 'gue
 export function applyEvent(g: OnlineGame, e: NetEvent): OnlineGame {
   const p = e.payload as Record<string, never>
   switch (e.kind) {
-    case 'start':
+    case 'start': {
+      const mode: GameMode = p.mode === 'turns' || p.mode === 'onehp' ? p.mode : 'winner'
       return {
         ...initialGame(),
         started: true,
         names: { host: String(p.host), guest: String(p.guest) },
-        mode: p.mode === 'turns' ? 'turns' : 'winner',
+        mode,
         // « normal » : pas de limite de rounds ; « blitz » (et les anciennes parties) : 50 rounds
-        eng: newGameState(p.pace === 'normal' ? UNLIMITED_ROUNDS : MAX_ROUNDS),
+        eng: newGameFor(mode, p.pace === 'normal' ? UNLIMITED_ROUNDS : MAX_ROUNDS),
       }
+    }
 
     case 'reveal': {
       const host = p.host as unknown as Move

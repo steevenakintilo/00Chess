@@ -8,7 +8,7 @@ import { MAX_ROUNDS, applyAction, applyDuelResult, finishRound, newGameState, ty
 import { playTurnLevel } from '../utils/aiBoard'
 import LevelPicker, { useStoredLevel } from '../components/LevelPicker'
 import ModePicker, { useStoredGameMode } from '../components/ModePicker'
-import { actorsAfterDuel, type GameMode } from '../utils/rounds'
+import { actorsAfterDuel, BASE_MODES, type GameMode } from '../utils/rounds'
 import { newAiMemory, rewardFor, type AiMemory } from '../utils/game007'
 import { simulateDuel, type Level } from '../utils/aiLevels'
 import { describeAction, openingSimilarity, type MoveRecord, type Similarity } from '../utils/similarity'
@@ -57,7 +57,7 @@ export default function IAvsIA() {
   const [delay, setDelay] = useState(600)
   const [stats, setStats] = useState<Stats | null>(null)
   const [levelBlue, setLevelBlue] = useStoredLevel('aiLevelBlue')
-  const [gameMode, setGameMode] = useStoredGameMode()
+  const [gameMode, setGameMode] = useStoredGameMode('gameMode', BASE_MODES)
   const [levelRed, setLevelRed] = useStoredLevel('aiLevelRed')
   const memories = useRef<Memories>(freshMemories()) // l'IA Difficile se souvient des duels précédents de la partie
   const levels: Levels = { blue: levelBlue, red: levelRed }
@@ -126,7 +126,7 @@ export default function IAvsIA() {
 
         {/* Panneau de lecture à droite du plateau */}
         <div className="d-flex flex-column gap-3" style={{ width: 'min(100%, 320px)' }}>
-          <ModePicker value={gameMode} onChange={setGameMode} />
+          <ModePicker value={gameMode} onChange={setGameMode} modes={BASE_MODES} />
           <LevelPicker label={t('ai.red')} value={levelRed} onChange={l => changeLevel('red', l)} />
           <LevelPicker label={t('ai.blue')} value={levelBlue} onChange={l => changeLevel('blue', l)} />
           <div className="d-flex flex-wrap align-items-center gap-2">

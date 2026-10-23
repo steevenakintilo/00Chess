@@ -10,7 +10,7 @@ import { pieceImages } from '../utils/pieces'
 import { shopItems } from '../utils/shop'
 import LevelPicker, { useStoredLevel } from '../components/LevelPicker'
 import ModePicker, { useStoredGameMode } from '../components/ModePicker'
-import { actorsAfterDuel, GAME_MODES, hasDuel, type GameMode } from '../utils/rounds'
+import { actorsAfterDuel, boardKind, GAME_MODES, hasDuel, newGameFor, type GameMode } from '../utils/rounds'
 import { playTurnLevel } from '../utils/aiBoard'
 import { newAiMemory, type AiMemory } from '../utils/game007'
 import { useGameSounds } from '../utils/useGameSounds'
@@ -75,7 +75,7 @@ export default function VsIA() {
   const [level, setLevel] = useStoredLevel('aiLevel')
   const [gameMode, setGameMode] = useStoredGameMode('gameMode', GAME_MODES)
   const classic = !hasDuel(gameMode) // mode « Classique » : ni 007 ni argent
-  const [game, setGame] = useState<GameState>(() => newGameState(MAX_ROUNDS, classic))
+  const [game, setGame] = useState<GameState>(() => newGameFor(gameMode, MAX_ROUNDS))
   // joueurs qui doivent encore jouer ce round après le joueur (mode « tour par tour » : l'IA peut jouer après toi)
   const [pending, setPending] = useState<PlayerId[]>([])
   // l'IA Difficile se souvient de tes habitudes pendant toute la partie (les autres niveaux repartent de zéro à chaque duel)
@@ -116,17 +116,17 @@ export default function VsIA() {
     aiMemory.current = newAiMemory()
     setPending([])
     setElapsed(0)
-    setGame(newGameState(maxRounds, classic))
+    setGame(newGameFor(gameMode, maxRounds))
     setPhase('setup')
     resetSelection()
   }
 
-  // Le mode ne change pas en cours de partie entre « Classique » (sans argent) et les modes avec 007.
+  // Le mode ne change pas en cours de partie entre des modes aux règles de plateau différentes (Classique, Roi 1 PV, normal).
   function changeMode(m: GameMode) {
     const started = phase !== 'setup'
-    if (started && !hasDuel(m) !== classic) return
+    if (started && boardKind(m) !== boardKind(gameMode)) return
     setGameMode(m)
-    if (!started) setGame(newGameState(maxRounds, !hasDuel(m)))
+    if (!started) setGame(newGameFor(m, maxRounds))
   }
 
   // Fait jouer l'IA tant que c'est à elle ; s'arrête dès que c'est à toi (et rend ceux qui jouent après toi).
@@ -294,7 +294,7 @@ export default function VsIA() {
             value={gameMode}
             onChange={changeMode}
             modes={GAME_MODES}
-            disabledModes={phase === 'setup' ? [] : GAME_MODES.filter(m => !hasDuel(m) !== classic)}
+            disabledModes={phase === 'setup' ? [] : GAME_MODES.filter(m => boardKind(m) !== boardKind(gameMode))}
           />
           <LevelPicker value={level} onChange={changeLevel} />
 
@@ -323,7 +323,7 @@ export default function VsIA() {
                   onChange={e => {
                     const n = Math.max(1, Math.floor(Number(e.target.value)) || 1)
                     setMaxRounds(n)
-                    setGame(newGameState(n, classic)) // la partie n'a pas commencé : on repart d'un état neuf avec la nouvelle limite
+                    setGame(newGameFor(gameMode, n)) // la partie n'a pas commencé : on repart d'un état neuf avec la nouvelle limite
                   }}
                 />
               </label>
@@ -416,7 +416,7 @@ export default function VsIA() {
               )}
             </div>
         <div className="row row-cols-2 row-cols-md-3 g-3">
-          {shopItems.filter(item => !classic || (item.key !== 'Berolina' && item.key !== 'Duck' && item.key !== 'Wildebeest')).map(item => {
+          {shopItems.filter(item => !game.banned?.includes(item.key as ShopKey) && (!classic || (item.key !== 'Berolina' && item.key !== 'Duck' && item.key !== 'Wildebeest'))).map(item => {
             const key = item.key as ShopKey
             const ok = myTurn && canBuy(game, 'p1', key)
             return (

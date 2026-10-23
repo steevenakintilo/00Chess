@@ -28,6 +28,8 @@ export type GameState = {
   round: number
   maxRounds: number
   infinite?: boolean // mode « Classique » : achats gratuits (argent infini), ni 007 ni revenus
+  kingHp?: number // PV de départ des rois (KING_HP par défaut ; 1 dans le mode « Roi 1 PV »)
+  banned?: ShopKey[] // pièces qu'on ne peut pas acheter dans ce mode
   result: Result | null
   log: Msg[]
   logCount?: number // total des entrées de journal écrites depuis le début (pour les sons : une action = un son)
@@ -115,13 +117,16 @@ const log = (s: GameState, k: string, p?: Msg['p']) => {
   if (s.log.length > 40) s.log.shift()
 }
 
-export function newGameState(maxRounds = MAX_ROUNDS, infinite = false): GameState {
+export type Rules = { kingHp?: number; banned?: ShopKey[] }
+
+export function newGameState(maxRounds = MAX_ROUNDS, infinite = false, rules: Rules = {}): GameState {
+  const kingHp = rules.kingHp ?? KING_HP
   const board: (Piece | null)[][] = Array.from({ length: SIZE }, () => Array(SIZE).fill(null))
   board[SIZE - 1][0] = { type: 'King', owner: 'p1' }
   board[0][SIZE - 1] = { type: 'King', owner: 'p2' }
   const player = (): PlayerState => ({
     money: 0,
-    hp: KING_HP,
+    hp: kingHp,
     bought: { Soldier: 0, Sergeant: 0, Archbishop: 0, Berolina: 0, Dabbaba: 0, Duck: 0, Wildebeest: 0 },
     captured: 0,
     capturedPieces: [],
@@ -135,6 +140,8 @@ export function newGameState(maxRounds = MAX_ROUNDS, infinite = false): GameStat
     round: 1,
     maxRounds,
     infinite,
+    kingHp,
+    banned: rules.banned,
     result: null,
     log: [],
   }
@@ -160,8 +167,9 @@ export function scoreBreakdown(s: GameState, p: PlayerId) {
 function tiebreak(s: GameState, kind: 'limit' | 'nopieces'): Result {
   const hp1 = Math.max(s.players.p1.hp, 0)
   const hp2 = Math.max(s.players.p2.hp, 0)
-  const dmg1 = KING_HP - hp2 // dégâts infligés par p1 au roi de p2
-  const dmg2 = KING_HP - hp1
+  const kingHp = s.kingHp ?? KING_HP
+  const dmg1 = kingHp - hp2 // dégâts infligés par p1 au roi de p2
+  const dmg2 = kingHp - hp1
   if (dmg1 !== dmg2) {
     const winner = dmg1 > dmg2 ? 'p1' : 'p2'
     return { winner, reason: { k: `end.${kind}Hp`, p: { n: s.maxRounds, a: dmg1, b: dmg2, x: '@who.p1', y: '@who.p2' } } }
@@ -257,9 +265,10 @@ export function placementCells(s: GameState, p: PlayerId, item: ShopKey): Pos[] 
 export function buyBlockReason(s: GameState, p: PlayerId, item: ShopKey): string | null {
   const me = s.players[p]
   if (me.bought[item] >= maxOf(item)) return 'reason.max'
+  if (s.banned?.includes(item)) return 'reason.max' // mode « Roi 1 PV » : ni reine, ni Genkidama
   if (s.infinite && (item === 'Berolina' || item === 'Duck' || item === 'Wildebeest')) return 'reason.max' // mode Classique : ni reine, ni Tsar Bomba, ni Genkidama
   if (!s.infinite && me.money < priceOf(item)) return 'reason.money'
-  if (item === 'Berolina') return me.hp < KING_HP ? null : 'reason.hp'
+  if (item === 'Berolina') return me.hp < (s.kingHp ?? KING_HP) ? null : 'reason.hp'
   // Genkidama : il faut aussi plus de 1000 $ d'avance sur l'adversaire (sinon 1001 $ contre 995 $ suffirait, ce qui n'est pas juste)
   if (item === 'Wildebeest') return me.money - s.players[other(p)].money > GENKIDAMA_GAP ? null : 'reason.genkiGap'
   if (item === 'Duck') return me.hp > TSAR_SELF_DAMAGE ? null : 'reason.tsarHp' // la bombe ne doit pas tuer ton propre roi
@@ -427,7 +436,7 @@ export function applyAction(state: GameState, p: PlayerId, a: Action): GameState
       me.bought[a.item] += 1
       if (a.item === 'Berolina') {
         // la reine donne son coeur au roi : +1 PV
-        me.hp = Math.min(me.hp + 1, KING_HP)
+        me.hp = Math.min(me.hp + 1, s.kingHp ?? KING_HP)
         log(s, 'log.queen', { who })
       } else if (a.item === 'Duck') {
         // supprime toutes les pièces ennemies (le roi reste), mais coûte des PV à ton roi
@@ -550,7 +559,8 @@ function material(s: GameState, p: PlayerId, w: AiWeights): number {
   const left = Math.max(0, s.maxRounds - s.round)
   let v = me.money + w.captured * me.captured + w.hp * me.hp + w.snipe * (me.snipesLeft.Sergeant + me.snipesLeft.Archbishop)
   // roi abîmé et reine pas encore achetée : l'IA garde son argent au lieu de tout dépenser en soldats
-  if (me.hp < KING_HP && me.bought.Berolina === 0) v += (w.queenSave * (KING_HP - me.hp) * Math.min(me.money, priceOf('Berolina'))) / priceOf('Berolina')
+  const kingHp = s.kingHp ?? KING_HP
+  if (me.hp < kingHp && me.bought.Berolina === 0) v += (w.queenSave * (kingHp - me.hp) * Math.min(me.money, priceOf('Berolina'))) / priceOf('Berolina')
   for (const { piece } of piecesOf(s, p)) {
     v += pieceValue(piece.type) * w.piece
     if (piece.type === 'Dabbaba') v += w.collector + w.collectorRate * left // revenus futurs
@@ -586,7 +596,7 @@ export function evaluate(s: GameState, me: PlayerId, w: AiWeights = NORMAL_WEIGH
 // et la reine vaut d'autant plus que mon roi est abîmé (à 250 $ pour 1 PV elle ne vaut le coup que s'il manque au moins 2 PV).
 export function actionBonus(s: GameState, me: PlayerId, a: Action, w: AiWeights): number {
   if (a.kind === 'kamikaze') return w.kamikaze
-  if (a.kind === 'buy' && a.item === 'Berolina') return w.queen * (KING_HP - s.players[me].hp)
+  if (a.kind === 'buy' && a.item === 'Berolina') return w.queen * ((s.kingHp ?? KING_HP) - s.players[me].hp)
   return 0
 }
 

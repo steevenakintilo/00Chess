@@ -131,7 +131,7 @@ export default function Home() {
           </p>
           <p>
             {t('about.p4')}{' '}
-            <a href="https://excalidraw.com/#json=Bup4OTnqOOlCvsJeMUYE9,BpO7alld1ab2rJGGzVPY3A" target="_blank" rel="noopener noreferrer">
+            <a href="https://excalidraw.com/#json=pZvfcytVlVJlx0LG1hE4g,1fE37b0jrSXlYZBiLIpzng" target="_blank" rel="noopener noreferrer">
               {t('about.draw')}
             </a>
           </p>
